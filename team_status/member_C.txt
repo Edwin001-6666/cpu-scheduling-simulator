@@ -1,0 +1,18 @@
+Member: C
+Role: Streamlit UI and Visualization
+
+Status: NOT STARTED
+Current Task: None
+Completed Tasks:
+- None
+Files Changed:
+- None
+Tests/Checks:
+- Not started
+Blockers:
+- None
+Next Task:
+- Begin implementation after foundation / architecture is established
+Notes for Team:
+- Member C's implementation has not started.
+- Planned responsibility: Streamlit UI and Visualization.

@@ -1,0 +1,27 @@
+CPU Scheduling Lab — Project-wide Decision Log
+
+- Priority convention: LOWER numeric value means HIGHER priority.
+- SJF is initially non-preemptive.
+- Priority Scheduling is initially non-preemptive.
+- Round Robin will be preemptive.
+- Round Robin time quantum must be positive.
+- PID must be unique.
+- Arrival Time must be >= 0.
+- Burst Time must be > 0.
+- CPU idle periods must be explicitly representable.
+- Scheduling logic must remain independent of the UI.
+- Scheduling-engine interface: all algorithms subclass SchedulingAlgorithm (algorithms/base.py), an abstract base class with two abstract members — a `name` property (str) and a `schedule(processes: Sequence[Process]) -> SimulationResult` method.
+- Algorithm-specific configuration (e.g. Round Robin's time quantum) is passed to each subclass's __init__. The base class takes no configuration. This avoids forcing FCFS/SJF/Priority to accept a time_quantum they do not use. Round Robin's __init__ will accept `time_quantum: int`; other algorithms' __init__ will take no extra arguments.
+- The interface imposes no assumption about preemptive vs non-preemptive behavior, so future preemptive algorithms can be added without redesigning the architecture.
+- FCFS tie-breaking: when multiple processes share the same arrival time, they are ordered by PID (lexicographic). This guarantees deterministic output regardless of input order.
+- FCFS sets response_time equal to waiting_time (non-preemptive: first dispatch is after the full wait).
+- SJF is non-preemptive: once a process starts executing it runs to completion. A shorter job arriving mid-execution does not preempt the running process.
+- SJF tie-breaking: when multiple ready processes have the same burst time, select by earliest arrival_time, then by PID (lexicographic). Effective sort key: burst_time → arrival_time → pid.
+- Priority Scheduling confirmed: lower numeric priority value = higher scheduling priority (priority 1 beats priority 3). This applies to the PriorityScheduler class in algorithms/priority.py.
+- Priority Scheduling is non-preemptive: once a process starts executing it runs to completion. A higher-priority process arriving mid-execution does not preempt the running process.
+- Priority Scheduling tie-breaking: when multiple ready processes have the same priority value, select by earliest arrival_time, then by PID (lexicographic). Effective sort key: priority → arrival_time → pid.
+- Round Robin is preemptive. Each process runs for at most time_quantum time units before being preempted and placed at the back of the ready queue.
+- Round Robin time_quantum must be a positive integer. The RoundRobin __init__ defensively rejects zero, negative, and non-integer values with a ValueError.
+- Round Robin ready-queue policy: processes are initially enqueued in (arrival_time, pid) order for determinism. The queue is FIFO.
+- Round Robin arrival-during-quantum: when a quantum expires and new processes have arrived during that slice, the newly arriving processes are enqueued FIRST, then the preempted process is re-queued at the back. This is the standard textbook convention.
+- Round Robin arrival at quantum boundary: a process arriving at exactly the same time a quantum expires is considered ready at that time and enters the queue before the preempted process.

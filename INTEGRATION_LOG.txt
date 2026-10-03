@@ -1,0 +1,19 @@
+CPU Scheduling Lab — Integration Log
+
+- The initial project foundation exists.
+- Shared data contracts have been established in core/models.py.
+- The Process, ExecutionSegment, ProcessMetrics, and SimulationResult contracts are established.
+- The scheduling-engine interface has been established in algorithms/base.py (SchedulingAlgorithm ABC).
+- FCFS algorithm implemented locally in algorithms/fcfs.py. Tests in tests/test_fcfs.py (13 tests).
+- SJF algorithm implemented locally in algorithms/sjf.py. Tests in tests/test_sjf.py (17 tests).
+- Priority algorithm implemented locally in algorithms/priority.py. Tests in tests/test_priority.py (19 tests).
+- Round Robin algorithm implemented locally in algorithms/round_robin.py. Tests in tests/test_round_robin.py (23 tests).
+- Scheduling-engine integration and hardening complete (Part 8). Cross-algorithm integration tests in tests/test_integration.py (26 tests).
+- Final scheduling-engine audit complete (Part 9). One dead-code issue found and fixed (unused variable in round_robin.py). One missing invariant test added (completion_time vs last segment end_time). No correctness bugs found.
+- All four scheduling algorithms exist locally. 98 tests, all passing.
+- The scheduling engine is ready for dependent team components.
+- Streamlit UI is NOT implemented.
+- Validation and metrics calculation logic are NOT implemented.
+- CSV input is NOT implemented.
+- Documentation and demo are NOT implemented.
+- No feature branches have been integrated into the team branch yet.
