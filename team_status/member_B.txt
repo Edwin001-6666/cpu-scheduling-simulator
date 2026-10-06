@@ -2,69 +2,74 @@ Member: B
 Role: Models, Metrics, Validation, CSV Input
 
 Status: IN PROGRESS
-Current Task: B1 — Validation Layer (COMPLETE)
+Current Task: B2 — Metrics Enhancement Layer (COMPLETE)
 Completed Tasks:
-- B1: Implemented input validation layer in core/validation.py
+- B1: Implemented input validation layer in core/validation.py (COMPLETE)
+- B2: Implemented metrics enhancement layer in core/metrics.py (COMPLETE)
 
-Files Changed:
-- core/validation.py  [NEW]  — full validation module
-- core/validation.py  exports: ValidationError, ValidationResult,
-                                validate_processes,
-                                validate_round_robin_quantum
-- core/__init__.py    [MODIFIED] — added validation exports to package __all__
-- tests/test_validation.py [NEW] — 78 unit tests for the validation layer
+=== B1 (Validation) ===
+Files:
+- core/validation.py  [NEW]
+- core/__init__.py    [MODIFIED] — added validation exports
+- tests/test_validation.py [NEW] — 78 unit tests
 
-Validation API:
+API:
   validate_processes(processes) -> ValidationResult
-    Validates a list/tuple of Process objects before they reach any algorithm.
-    Rules enforced:
-      - List must be non-empty
-      - Each element must be a Process instance
-      - PID must be a non-empty string and must not equal IDLE_PROCESS_ID
-      - All PIDs must be unique
-      - arrival_time must be int >= 0
-      - burst_time must be int > 0
-      - priority must be int (any integer; lower = higher priority per DECISIONS.txt)
-
   validate_round_robin_quantum(quantum) -> ValidationResult
-    Validates a Round Robin time quantum value.
-    Rules enforced:
-      - Must not be None
-      - Must be a plain int (not bool, not float, not str)
-      - Must be > 0
+  ValidationResult: .is_valid, .errors (list[ValidationError])
+  ValidationError:  .field, .message, .process_id
 
-  ValidationResult:
-    .is_valid  (bool)             — True if no errors
-    .errors    (list[ValidationError]) — structured error list (empty when valid)
-    bool(result) == result.is_valid
+=== B2 (Metrics) ===
+Files:
+- core/metrics.py  [NEW]
+- core/__init__.py [MODIFIED] — added compute_metrics export
+- tests/test_metrics.py [NEW] — 62 unit tests
 
-  ValidationError:
-    .field       (str)            — field name that failed (e.g. "burst_time")
-    .message     (str)            — human-readable message for UI display
-    .process_id  (str | None)     — PID of the offending process, or None
+API:
+  compute_metrics(result: SimulationResult, processes: Sequence[Process])
+      -> SimulationResult
+
+  Call AFTER algo.schedule(). Returns an enriched SimulationResult with:
+    - ProcessMetrics.response_time filled for every process
+    - SimulationResult.average_response_time filled
+    - SimulationResult.cpu_utilization filled (percentage, 0.0–100.0)
+    - SimulationResult.throughput filled (processes per unit time)
+
+Formulas:
+  response_time      = first_dispatch_start_time - arrival_time
+                       (first_dispatch determined from execution_segments)
+  average_response_time = mean(response_time for all processes)
+  cpu_utilization    = (busy_time / total_time) * 100.0
+                       busy_time  = sum of non-idle segment durations
+                       total_time = last_segment.end_time - first_segment.start_time
+  throughput         = n_processes / total_time
 
 Design decisions:
-  - Validation is COMPLETELY independent of Streamlit, algorithms, and storage
-  - Validation NEVER silently modifies or discards invalid input
-  - All errors are collected and returned (not raised); caller inspects result
-  - Laptop C (Streamlit UI) can call these functions directly and display
-    result.errors as friendly messages
+  - compute_metrics is a pure post-processing function — no algorithm logic
+  - Derives all values from SimulationResult.execution_segments (the Gantt)
+  - Does NOT mutate input SimulationResult or process list
+  - Works correctly for Round Robin (preemptive) by scanning segments in order
+    to find each process's first dispatch
+  - Works correctly with CPU idle periods (idle segments excluded from busy_time)
 
 Tests/Checks:
-- 78 new unit tests in tests/test_validation.py (all passing)
-- All 98 original Laptop A tests still pass
-- Total: 176 tests, 0 failures
+- 62 new unit tests in tests/test_metrics.py (all passing)
+- All 176 prior tests still pass
+- Total: 238 tests, 0 failures
 
 Blockers:
 - None
 
 Next Task:
-- B2 — Metrics enhancement (response time, CPU utilization, throughput)
+- B3 — CSV Import layer (parse CSV → create Process objects → validation → engine)
 
 Notes for Team:
-- Laptop C: call validate_processes(processes) and validate_round_robin_quantum(q)
-  BEFORE passing inputs to any scheduling algorithm. Check result.is_valid and
-  display result.errors[i].message for each error.
+- Laptop C (Streamlit): call compute_metrics(result, processes) after
+  algo.schedule(processes) to get response_time, cpu_utilization, throughput.
+  Example:
+    result = algo.schedule(validated_processes)
+    enriched = compute_metrics(result, validated_processes)
+    # Use enriched.cpu_utilization, enriched.throughput, etc.
 - No Streamlit was added.
 - No CSV implementation was added.
 - No database or storage was added.

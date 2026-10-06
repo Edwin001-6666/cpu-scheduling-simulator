@@ -34,3 +34,10 @@ CPU Scheduling Lab — Project-wide Decision Log
 - Round Robin quantum validation: quantum must be a positive plain int. bool, float, str, and None are all rejected explicitly.
 - validate_processes() accepts unsorted process lists; it does not require arrival-time ordering.
 - core/__init__.py exports ValidationError, ValidationResult, validate_processes, validate_round_robin_quantum so callers can import from core directly.
+- Metrics layer lives in core/metrics.py. It post-processes a SimulationResult and returns an enriched copy. It does not replicate scheduling logic.
+- compute_metrics(result, processes) is the single public entry point. Laptop C calls it after algo.schedule().
+- Response time formula: response_time = first_dispatch_start_time - arrival_time. "First dispatch" is the start_time of the first non-idle ExecutionSegment with process_id == pid (scanning segments in order). This correctly handles Round Robin (preemptive) where a process may appear in multiple segments.
+- CPU utilization is expressed as a percentage (0.0–100.0): (busy_time / total_time) * 100.0. busy_time = sum of non-idle segment durations; total_time = last segment end_time - first segment start_time. Idle periods (IDLE_PROCESS_ID segments) are excluded from busy_time automatically.
+- Throughput = n_processes / total_time (processes per unit of simulated time). total_time is the same wall-clock span as used for cpu_utilization.
+- compute_metrics does not mutate its inputs. SimulationResult is a frozen dataclass; a new instance is constructed and returned.
+- core/__init__.py exports compute_metrics so callers can use `from core import compute_metrics`.

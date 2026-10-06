@@ -17,6 +17,7 @@ from core.validation import (
     validate_processes,
     validate_round_robin_quantum,
 )
+from core.metrics import compute_metrics
 
 __all__ = [
     "IDLE_PROCESS_ID",
@@ -28,4 +29,5 @@ __all__ = [
     "ValidationResult",
     "validate_processes",
     "validate_round_robin_quantum",
+    "compute_metrics",
 ]

@@ -1,5 +1,5 @@
 Project name: CPU Scheduling Lab
-Current phase: Validation Layer — Complete
+Current phase: Metrics Enhancement Layer — Complete
 Overall status: IN PROGRESS
 
 Initial foundation complete.
@@ -13,25 +13,27 @@ Round Robin algorithm — IMPLEMENTED (algorithms/round_robin.py). Tests in test
 Integration tests — tests/test_integration.py (26 tests, all passing).
 
 Validation layer — IMPLEMENTED (core/validation.py). Tests in tests/test_validation.py (78 tests, all passing).
+Metrics layer — IMPLEMENTED (core/metrics.py). Tests in tests/test_metrics.py (62 tests, all passing).
 
 All four required scheduling algorithms are implemented.
 Scheduling-engine integration, hardening, and final audit are complete.
 Validation layer is implemented and tested.
-Total: 176 tests, all passing.
+Metrics enhancement layer is implemented and tested.
+Total: 238 tests, all passing.
 
-The scheduling engine is ready for dependent team components (UI, metrics, CSV input).
+The scheduling engine is ready for dependent team components (UI, CSV input).
 The validation layer is ready for Laptop C (Streamlit UI) to integrate.
+The metrics layer is ready for Laptop C to call after scheduling.
 
 Remaining separate tasks:
-- Metrics enhancement (response time, CPU utilization, throughput) — NOT implemented
-- Streamlit UI — NOT implemented
 - CSV input — NOT implemented
+- Streamlit UI — NOT implemented
 - Gantt visualization — NOT implemented
 - Documentation — NOT implemented
 - Demo/Presentation — NOT implemented
 
 Team ownership:
 - Member A — Scheduling Engine (COMPLETE)
-- Member B — Models, Metrics, Validation, CSV Input (Validation COMPLETE; Metrics/CSV pending)
+- Member B — Models, Metrics, Validation, CSV Input (Validation COMPLETE; Metrics COMPLETE; CSV pending)
 - Member C — Streamlit UI and Visualization
 - Member D — Testing, Documentation, Demo/Presentation

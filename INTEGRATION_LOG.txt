@@ -23,3 +23,9 @@ CPU Scheduling Lab — Integration Log
   78 new unit tests added. All 98 original tests continue to pass. Total: 176 tests, 0 failures.
   Validation is independent of Streamlit and all scheduling algorithms.
   Laptop C (Streamlit UI) should call validate_processes()/validate_round_robin_quantum() before dispatching to algorithms.
+- B2 Metrics layer implemented by Member B (core/metrics.py, tests/test_metrics.py, core/__init__.py updated).
+  compute_metrics(result, processes) -> SimulationResult is the public API.
+  Fills: response_time per process, average_response_time, cpu_utilization (%), throughput (proc/time).
+  62 new unit tests added. All 176 prior tests continue to pass. Total: 238 tests, 0 failures.
+  Metrics are derived from execution_segments — no scheduling logic duplicated.
+  Laptop C should call compute_metrics(result, processes) after algo.schedule(processes).
