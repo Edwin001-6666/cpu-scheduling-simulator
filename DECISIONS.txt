@@ -41,3 +41,12 @@ CPU Scheduling Lab — Project-wide Decision Log
 - Throughput = n_processes / total_time (processes per unit of simulated time). total_time is the same wall-clock span as used for cpu_utilization.
 - compute_metrics does not mutate its inputs. SimulationResult is a frozen dataclass; a new instance is constructed and returned.
 - core/__init__.py exports compute_metrics so callers can use `from core import compute_metrics`.
+- CSV import layer lives in core/csv_import.py. It converts CSV text → Process objects. It does NOT call validate_processes() internally; parsing and semantic validation are separate concerns.
+- Canonical CSV column header (case-sensitive, order-independent): PID,Arrival Time,Burst Time,Priority.
+- Extra CSV columns beyond the four required ones are silently ignored. Their names are surfaced in CsvParseResult.extra_columns so the UI can optionally show a warning. This allows richer CSV files (e.g. with Notes or Department columns) to be parsed without error.
+- Blank lines in the CSV body are silently skipped.
+- Decimal numeric strings (e.g. "3.5") are a parse error; only whole-number strings are accepted for arrival_time, burst_time, and priority.
+- Negative integer values (e.g. "-1") are parsed successfully and passed through to validate_processes(), which produces the appropriate user-facing message. This keeps semantic checking in one place (B1).
+- parse_processes_csv() accepts both str (CSV text) and file-like text objects (io.StringIO, open(), Streamlit UploadedFile). This avoids filesystem coupling.
+- CsvParseResult.errors uses CsvParseError (not ValidationError) so that parse errors and validation errors remain distinct types for the UI to handle separately.
+- CsvParseError.row is a 1-based data row index (None for structural errors), giving the UI precise location information for highlighting bad rows.

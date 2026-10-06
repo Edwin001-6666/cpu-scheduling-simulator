@@ -2,74 +2,103 @@ Member: B
 Role: Models, Metrics, Validation, CSV Input
 
 Status: IN PROGRESS
-Current Task: B2 — Metrics Enhancement Layer (COMPLETE)
+Current Task: B3 — CSV Import Layer (COMPLETE)
 Completed Tasks:
 - B1: Implemented input validation layer in core/validation.py (COMPLETE)
 - B2: Implemented metrics enhancement layer in core/metrics.py (COMPLETE)
+- B3: Implemented CSV import layer in core/csv_import.py (COMPLETE)
 
 === B1 (Validation) ===
 Files:
-- core/validation.py  [NEW]
-- core/__init__.py    [MODIFIED] — added validation exports
+- core/validation.py       [NEW]
+- core/__init__.py         [MODIFIED] — added validation exports
 - tests/test_validation.py [NEW] — 78 unit tests
 
 API:
   validate_processes(processes) -> ValidationResult
   validate_round_robin_quantum(quantum) -> ValidationResult
-  ValidationResult: .is_valid, .errors (list[ValidationError])
-  ValidationError:  .field, .message, .process_id
 
 === B2 (Metrics) ===
 Files:
-- core/metrics.py  [NEW]
-- core/__init__.py [MODIFIED] — added compute_metrics export
+- core/metrics.py       [NEW]
+- core/__init__.py      [MODIFIED] — added compute_metrics export
 - tests/test_metrics.py [NEW] — 62 unit tests
 
 API:
   compute_metrics(result: SimulationResult, processes: Sequence[Process])
       -> SimulationResult
+  Fills: response_time, average_response_time, cpu_utilization, throughput
 
-  Call AFTER algo.schedule(). Returns an enriched SimulationResult with:
-    - ProcessMetrics.response_time filled for every process
-    - SimulationResult.average_response_time filled
-    - SimulationResult.cpu_utilization filled (percentage, 0.0–100.0)
-    - SimulationResult.throughput filled (processes per unit time)
+=== B3 (CSV Import) ===
+Files:
+- core/csv_import.py       [NEW]
+- core/__init__.py         [MODIFIED] — added csv_import exports
+- tests/test_csv_import.py [NEW] — 74 unit tests
 
-Formulas:
-  response_time      = first_dispatch_start_time - arrival_time
-                       (first_dispatch determined from execution_segments)
-  average_response_time = mean(response_time for all processes)
-  cpu_utilization    = (busy_time / total_time) * 100.0
-                       busy_time  = sum of non-idle segment durations
-                       total_time = last_segment.end_time - first_segment.start_time
-  throughput         = n_processes / total_time
+API:
+  parse_processes_csv(csv_source: str | IO[str]) -> CsvParseResult
 
-Design decisions:
-  - compute_metrics is a pure post-processing function — no algorithm logic
-  - Derives all values from SimulationResult.execution_segments (the Gantt)
-  - Does NOT mutate input SimulationResult or process list
-  - Works correctly for Round Robin (preemptive) by scanning segments in order
-    to find each process's first dispatch
-  - Works correctly with CPU idle periods (idle segments excluded from busy_time)
+  CsvParseResult:
+    .is_valid      (bool)
+    .processes     (list[Process])   — populated when is_valid is True
+    .errors        (list[CsvParseError]) — populated when is_valid is False
+    .extra_columns (list[str])       — extra header columns found (info only)
+
+  CsvParseError:
+    .field   (str)       — column name or "csv" for structural errors
+    .message (str)       — human-readable, suitable for direct UI display
+    .row     (int|None)  — 1-based data row number; None for structural errors
+
+Supported CSV format:
+  Canonical header (order-independent, case-sensitive):
+    PID,Arrival Time,Burst Time,Priority
+  Extra columns: silently ignored; surfaced in CsvParseResult.extra_columns
+  Blank lines: silently skipped
+  Quoted fields: supported (RFC 4180 via stdlib csv module)
+  Windows CRLF: supported
+
+Separation of concerns:
+  - Parsing converts CSV text → Process objects. It does NOT call
+    validate_processes() internally.
+  - Semantic validation (negative arrival, zero burst, duplicate PIDs, etc.)
+    is deliberately left to B1 validate_processes().
+  - The caller controls when to run each step:
+      parsed   = parse_processes_csv(source)
+      if parsed.is_valid:
+          valid = validate_processes(parsed.processes)
+          if valid:
+              result   = algo.schedule(parsed.processes)
+              enriched = compute_metrics(result, parsed.processes)
+
+Pipeline (complete):
+  CSV text/file-like
+      ↓
+  parse_processes_csv()   ← B3 (this module)
+      ↓
+  validate_processes()    ← B1
+      ↓
+  algo.schedule()         ← Laptop A
+      ↓
+  compute_metrics()       ← B2
 
 Tests/Checks:
-- 62 new unit tests in tests/test_metrics.py (all passing)
-- All 176 prior tests still pass
-- Total: 238 tests, 0 failures
+- 74 new unit tests in tests/test_csv_import.py (all passing)
+- All 238 prior tests still pass
+- Total: 312 tests, 0 failures
 
 Blockers:
 - None
 
 Next Task:
-- B3 — CSV Import layer (parse CSV → create Process objects → validation → engine)
+- None for Member B (B1, B2, B3 complete).
+- Laptop C (Streamlit UI) may now use the complete pipeline.
 
-Notes for Team:
-- Laptop C (Streamlit): call compute_metrics(result, processes) after
-  algo.schedule(processes) to get response_time, cpu_utilization, throughput.
-  Example:
-    result = algo.schedule(validated_processes)
-    enriched = compute_metrics(result, validated_processes)
-    # Use enriched.cpu_utilization, enriched.throughput, etc.
-- No Streamlit was added.
-- No CSV implementation was added.
+Notes for Laptop C:
+- Import from core: parse_processes_csv, validate_processes, compute_metrics
+- For Round Robin: also call validate_round_robin_quantum(quantum) before
+  constructing RoundRobin(time_quantum=quantum)
+- parse_processes_csv accepts io.StringIO, which is what Streamlit's
+  UploadedFile wraps — no adapter needed.
+- No Streamlit was added in B1/B2/B3.
+- No CSV writing/export was added.
 - No database or storage was added.

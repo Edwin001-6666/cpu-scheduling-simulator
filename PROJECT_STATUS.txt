@@ -1,5 +1,5 @@
 Project name: CPU Scheduling Lab
-Current phase: Metrics Enhancement Layer — Complete
+Current phase: CSV Import Layer — Complete
 Overall status: IN PROGRESS
 
 Initial foundation complete.
@@ -14,19 +14,19 @@ Integration tests — tests/test_integration.py (26 tests, all passing).
 
 Validation layer — IMPLEMENTED (core/validation.py). Tests in tests/test_validation.py (78 tests, all passing).
 Metrics layer — IMPLEMENTED (core/metrics.py). Tests in tests/test_metrics.py (62 tests, all passing).
+CSV import layer — IMPLEMENTED (core/csv_import.py). Tests in tests/test_csv_import.py (74 tests, all passing).
 
 All four required scheduling algorithms are implemented.
 Scheduling-engine integration, hardening, and final audit are complete.
 Validation layer is implemented and tested.
 Metrics enhancement layer is implemented and tested.
-Total: 238 tests, all passing.
+CSV import layer is implemented and tested.
+Total: 312 tests, all passing.
 
-The scheduling engine is ready for dependent team components (UI, CSV input).
-The validation layer is ready for Laptop C (Streamlit UI) to integrate.
-The metrics layer is ready for Laptop C to call after scheduling.
+Complete pipeline ready for Laptop C (Streamlit UI):
+  parse_processes_csv()  → validate_processes() → algo.schedule() → compute_metrics()
 
 Remaining separate tasks:
-- CSV input — NOT implemented
 - Streamlit UI — NOT implemented
 - Gantt visualization — NOT implemented
 - Documentation — NOT implemented
@@ -34,6 +34,6 @@ Remaining separate tasks:
 
 Team ownership:
 - Member A — Scheduling Engine (COMPLETE)
-- Member B — Models, Metrics, Validation, CSV Input (Validation COMPLETE; Metrics COMPLETE; CSV pending)
+- Member B — Models, Metrics, Validation, CSV Input (B1, B2, B3 all COMPLETE)
 - Member C — Streamlit UI and Visualization
 - Member D — Testing, Documentation, Demo/Presentation

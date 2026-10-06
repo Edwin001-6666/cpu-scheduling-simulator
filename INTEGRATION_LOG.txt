@@ -29,3 +29,12 @@ CPU Scheduling Lab — Integration Log
   62 new unit tests added. All 176 prior tests continue to pass. Total: 238 tests, 0 failures.
   Metrics are derived from execution_segments — no scheduling logic duplicated.
   Laptop C should call compute_metrics(result, processes) after algo.schedule(processes).
+- B3 CSV import layer implemented by Member B (core/csv_import.py, tests/test_csv_import.py, core/__init__.py updated).
+  parse_processes_csv(csv_source) -> CsvParseResult is the public API.
+  Accepts str or file-like text objects (io.StringIO, open(), Streamlit UploadedFile).
+  Canonical header: PID,Arrival Time,Burst Time,Priority (order-independent).
+  Extra columns silently ignored; blank lines skipped; quoted fields supported.
+  Parsing and semantic validation are separate — parser does NOT call validate_processes().
+  74 new unit tests added. All 238 prior tests continue to pass. Total: 312 tests, 0 failures.
+  Full pipeline now ready for Laptop C:
+    parse_processes_csv() → validate_processes() → algo.schedule() → compute_metrics()
