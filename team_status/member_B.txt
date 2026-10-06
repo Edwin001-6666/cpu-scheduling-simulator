@@ -1,18 +1,70 @@
 Member: B
 Role: Models, Metrics, Validation, CSV Input
 
-Status: NOT STARTED
-Current Task: None
+Status: IN PROGRESS
+Current Task: B1 — Validation Layer (COMPLETE)
 Completed Tasks:
-- None
+- B1: Implemented input validation layer in core/validation.py
+
 Files Changed:
-- None
+- core/validation.py  [NEW]  — full validation module
+- core/validation.py  exports: ValidationError, ValidationResult,
+                                validate_processes,
+                                validate_round_robin_quantum
+- core/__init__.py    [MODIFIED] — added validation exports to package __all__
+- tests/test_validation.py [NEW] — 78 unit tests for the validation layer
+
+Validation API:
+  validate_processes(processes) -> ValidationResult
+    Validates a list/tuple of Process objects before they reach any algorithm.
+    Rules enforced:
+      - List must be non-empty
+      - Each element must be a Process instance
+      - PID must be a non-empty string and must not equal IDLE_PROCESS_ID
+      - All PIDs must be unique
+      - arrival_time must be int >= 0
+      - burst_time must be int > 0
+      - priority must be int (any integer; lower = higher priority per DECISIONS.txt)
+
+  validate_round_robin_quantum(quantum) -> ValidationResult
+    Validates a Round Robin time quantum value.
+    Rules enforced:
+      - Must not be None
+      - Must be a plain int (not bool, not float, not str)
+      - Must be > 0
+
+  ValidationResult:
+    .is_valid  (bool)             — True if no errors
+    .errors    (list[ValidationError]) — structured error list (empty when valid)
+    bool(result) == result.is_valid
+
+  ValidationError:
+    .field       (str)            — field name that failed (e.g. "burst_time")
+    .message     (str)            — human-readable message for UI display
+    .process_id  (str | None)     — PID of the offending process, or None
+
+Design decisions:
+  - Validation is COMPLETELY independent of Streamlit, algorithms, and storage
+  - Validation NEVER silently modifies or discards invalid input
+  - All errors are collected and returned (not raised); caller inspects result
+  - Laptop C (Streamlit UI) can call these functions directly and display
+    result.errors as friendly messages
+
 Tests/Checks:
-- Not started
+- 78 new unit tests in tests/test_validation.py (all passing)
+- All 98 original Laptop A tests still pass
+- Total: 176 tests, 0 failures
+
 Blockers:
 - None
+
 Next Task:
-- Begin implementation after foundation / architecture is established
+- B2 — Metrics enhancement (response time, CPU utilization, throughput)
+
 Notes for Team:
-- Member B's implementation has not started.
-- Planned responsibility: Models, Metrics, Validation, CSV Input.
+- Laptop C: call validate_processes(processes) and validate_round_robin_quantum(q)
+  BEFORE passing inputs to any scheduling algorithm. Check result.is_valid and
+  display result.errors[i].message for each error.
+- No Streamlit was added.
+- No CSV implementation was added.
+- No database or storage was added.

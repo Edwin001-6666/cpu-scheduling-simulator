@@ -17,3 +17,9 @@ CPU Scheduling Lab — Integration Log
 - CSV input is NOT implemented.
 - Documentation and demo are NOT implemented.
 - No feature branches have been integrated into the team branch yet.
+- B1 Validation layer implemented by Member B (core/validation.py, tests/test_validation.py, core/__init__.py updated).
+  validate_processes() and validate_round_robin_quantum() are the public API.
+  Returns ValidationResult with is_valid flag and list of ValidationError (field, message, process_id).
+  78 new unit tests added. All 98 original tests continue to pass. Total: 176 tests, 0 failures.
+  Validation is independent of Streamlit and all scheduling algorithms.
+  Laptop C (Streamlit UI) should call validate_processes()/validate_round_robin_quantum() before dispatching to algorithms.

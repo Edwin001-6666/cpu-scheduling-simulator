@@ -1,5 +1,5 @@
 Project name: CPU Scheduling Lab
-Current phase: Scheduling Engine — Final Audit Complete
+Current phase: Validation Layer — Complete
 Overall status: IN PROGRESS
 
 Initial foundation complete.
@@ -12,14 +12,17 @@ Priority algorithm — IMPLEMENTED (algorithms/priority.py). Tests in tests/test
 Round Robin algorithm — IMPLEMENTED (algorithms/round_robin.py). Tests in tests/test_round_robin.py (23 tests, all passing).
 Integration tests — tests/test_integration.py (26 tests, all passing).
 
+Validation layer — IMPLEMENTED (core/validation.py). Tests in tests/test_validation.py (78 tests, all passing).
+
 All four required scheduling algorithms are implemented.
 Scheduling-engine integration, hardening, and final audit are complete.
-Total: 98 tests, all passing.
+Validation layer is implemented and tested.
+Total: 176 tests, all passing.
 
-The scheduling engine is ready for dependent team components (UI, validation, metrics, CSV input).
+The scheduling engine is ready for dependent team components (UI, metrics, CSV input).
+The validation layer is ready for Laptop C (Streamlit UI) to integrate.
 
 Remaining separate tasks:
-- Validation layer — NOT implemented
 - Metrics enhancement (response time, CPU utilization, throughput) — NOT implemented
 - Streamlit UI — NOT implemented
 - CSV input — NOT implemented
@@ -29,6 +32,6 @@ Remaining separate tasks:
 
 Team ownership:
 - Member A — Scheduling Engine (COMPLETE)
-- Member B — Models, Metrics, Validation, CSV Input
+- Member B — Models, Metrics, Validation, CSV Input (Validation COMPLETE; Metrics/CSV pending)
 - Member C — Streamlit UI and Visualization
 - Member D — Testing, Documentation, Demo/Presentation

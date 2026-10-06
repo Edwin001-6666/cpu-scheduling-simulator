@@ -11,6 +11,12 @@ from core.models import (
     ProcessMetrics,
     SimulationResult,
 )
+from core.validation import (
+    ValidationError,
+    ValidationResult,
+    validate_processes,
+    validate_round_robin_quantum,
+)
 
 __all__ = [
     "IDLE_PROCESS_ID",
@@ -18,4 +24,8 @@ __all__ = [
     "Process",
     "ProcessMetrics",
     "SimulationResult",
+    "ValidationError",
+    "ValidationResult",
+    "validate_processes",
+    "validate_round_robin_quantum",
 ]

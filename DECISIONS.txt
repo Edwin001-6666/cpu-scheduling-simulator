@@ -25,3 +25,12 @@ CPU Scheduling Lab — Project-wide Decision Log
 - Round Robin ready-queue policy: processes are initially enqueued in (arrival_time, pid) order for determinism. The queue is FIFO.
 - Round Robin arrival-during-quantum: when a quantum expires and new processes have arrived during that slice, the newly arriving processes are enqueued FIRST, then the preempted process is re-queued at the back. This is the standard textbook convention.
 - Round Robin arrival at quantum boundary: a process arriving at exactly the same time a quantum expires is considered ready at that time and enters the queue before the preempted process.
+- Validation layer lives in core/validation.py. It is separate from all scheduling algorithms and from the Streamlit UI. Algorithms may assume their input has been validated; validation is not repeated inside algorithms.
+- Validation returns a ValidationResult (is_valid: bool, errors: list[ValidationError]) rather than raising exceptions. This allows the UI to collect and display all errors at once rather than stopping at the first failure.
+- ValidationError carries three fields: field (str), message (str), process_id (str|None). The UI may display message directly as a user-facing string.
+- Validation never silently corrects invalid input (e.g. negative arrival time is reported, not clamped to 0). The user must fix inputs explicitly.
+- PID validation: PID must be a non-empty string, must not equal IDLE_PROCESS_ID ("IDLE"), and must be unique within the process list.
+- Priority validation: any integer is valid. No upper/lower bound is imposed beyond being a Python int. This is consistent with the model and the lower=higher-priority convention.
+- Round Robin quantum validation: quantum must be a positive plain int. bool, float, str, and None are all rejected explicitly.
+- validate_processes() accepts unsorted process lists; it does not require arrival-time ordering.
+- core/__init__.py exports ValidationError, ValidationResult, validate_processes, validate_round_robin_quantum so callers can import from core directly.
