@@ -1,5 +1,5 @@
 Project name: CPU Scheduling Lab
-Current phase: CSV Import Layer — Complete
+Current phase: Streamlit Frontend Foundation — Complete
 Overall status: IN PROGRESS
 
 Initial foundation complete.
@@ -15,25 +15,28 @@ Integration tests — tests/test_integration.py (26 tests, all passing).
 Validation layer — IMPLEMENTED (core/validation.py). Tests in tests/test_validation.py (78 tests, all passing).
 Metrics layer — IMPLEMENTED (core/metrics.py). Tests in tests/test_metrics.py (62 tests, all passing).
 CSV import layer — IMPLEMENTED (core/csv_import.py). Tests in tests/test_csv_import.py (74 tests, all passing).
+Streamlit frontend — FOUNDATION IMPLEMENTED (app.py). Backend integration verified.
 
 All four required scheduling algorithms are implemented.
 Scheduling-engine integration, hardening, and final audit are complete.
 Validation layer is implemented and tested.
 Metrics enhancement layer is implemented and tested.
 CSV import layer is implemented and tested.
+Streamlit frontend foundation created with backend smoke test.
 Total: 312 tests, all passing.
 
-Complete pipeline ready for Laptop C (Streamlit UI):
-  parse_processes_csv()  → validate_processes() → algo.schedule() → compute_metrics()
+Complete pipeline ready and integrated:
+  parse_processes_csv() → validate_processes() → algo.schedule() → compute_metrics()
+  Streamlit UI calls this pipeline via app.py
 
-Remaining separate tasks:
-- Streamlit UI — NOT implemented
-- Gantt visualization — NOT implemented
+Remaining tasks:
+- C2: Full Process Input UI (CSV upload, manual process entry) — NOT implemented
+- C3: Gantt visualization and algorithm comparison — NOT implemented
 - Documentation — NOT implemented
 - Demo/Presentation — NOT implemented
 
 Team ownership:
 - Member A — Scheduling Engine (COMPLETE)
 - Member B — Models, Metrics, Validation, CSV Input (B1, B2, B3 all COMPLETE)
-- Member C — Streamlit UI and Visualization
+- Member C — Streamlit UI and Visualization (C1 COMPLETE; C2, C3 pending)
 - Member D — Testing, Documentation, Demo/Presentation

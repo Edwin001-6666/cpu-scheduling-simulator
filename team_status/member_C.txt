@@ -1,18 +1,76 @@
 Member: C
 Role: Streamlit UI and Visualization
 
-Status: NOT STARTED
-Current Task: None
+Status: IN PROGRESS
+Current Task: C1 — Streamlit Frontend Foundation (COMPLETE)
 Completed Tasks:
-- None
-Files Changed:
-- None
-Tests/Checks:
-- Not started
+- C1: Created Streamlit application entry point with backend integration
+
+=== C1 (Frontend Foundation) ===
+Files:
+- app.py           [NEW] — Streamlit application entry point
+- requirements.txt [NEW] — runtime dependencies (streamlit)
+
+Entry point:
+  streamlit run app.py
+
+Application structure:
+  main()              — page config, layout, section routing
+  get_algorithm()     — algorithm instantiation by name
+  run_simulation()    — full pipeline: validate → schedule → compute_metrics
+  display_results()   — render SimulationResult in Streamlit
+  run_smoke_test()    — backend integration verification
+
+Backend integration (verified):
+  from core import (
+      Process, SimulationResult,
+      parse_processes_csv,        # B3
+      validate_processes,          # B1
+      validate_round_robin_quantum,# B1
+      compute_metrics,             # B2
+  )
+  from algorithms.fcfs import FCFS
+  from algorithms.sjf import SJF
+  from algorithms.priority import PriorityScheduler
+  from algorithms.round_robin import RoundRobin
+
+UI layout:
+  Sidebar:
+    - Algorithm selection (FCFS, SJF, Priority, Round Robin)
+    - Time Quantum input (visible only for Round Robin)
+  Main:
+    - Title and description
+    - Process Input section (placeholder for C2)
+    - Simulation controls with Run button
+    - Results section:
+      - Aggregate metrics (avg waiting, turnaround, response, CPU util)
+      - Throughput
+      - Per-process metrics table
+      - Execution timeline (text, placeholder for Gantt in C2/C3)
+
+Smoke test:
+  - Sample: P1(at=0,bt=5,prio=2), P2(at=1,bt=3,prio=1), P3(at=2,bt=4,prio=3)
+  - Pipeline: validate_processes → algo.schedule → compute_metrics
+  - All four algorithms connectable via sidebar selection
+
+Error handling:
+  - ValidationError messages displayed via st.error (user-friendly)
+  - Unexpected exceptions caught and shown without raw tracebacks
+  - Never silently swallows errors
+
+Tests:
+  - All 312 existing backend tests still pass
+  - No backend code was modified
+
 Blockers:
-- None
+  - None
+
 Next Task:
-- Begin implementation after foundation / architecture is established
+  - C2: Full Process Input UI (CSV upload, manual entry)
+
 Notes for Team:
-- Member C's implementation has not started.
-- Planned responsibility: Streamlit UI and Visualization.
+  - Run with: streamlit run app.py
+  - app.py calls the same backend APIs the test suite exercises
+  - No scheduling, validation, metrics, or CSV logic was duplicated
+  - No algorithm code was modified
+  - Ready for C2 to add proper input handling

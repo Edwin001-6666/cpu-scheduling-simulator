@@ -38,3 +38,11 @@ CPU Scheduling Lab — Integration Log
   74 new unit tests added. All 238 prior tests continue to pass. Total: 312 tests, 0 failures.
   Full pipeline now ready for Laptop C:
     parse_processes_csv() → validate_processes() → algo.schedule() → compute_metrics()
+- C1 Streamlit frontend foundation implemented by Member C (app.py, requirements.txt).
+  Entry point: streamlit run app.py
+  Imports and calls all backend modules: core.validation, core.metrics, core.csv_import, algorithms.*.
+  Backend integration verified via smoke test: sample processes → validate → schedule → compute_metrics.
+  All four algorithms (FCFS, SJF, Priority, Round Robin) connected via sidebar selection.
+  UI layout: sidebar (algorithm + quantum), main (process input placeholder, simulation controls, results).
+  Error handling: ValidationError messages displayed as st.error; no raw tracebacks exposed.
+  All 312 prior tests continue to pass. No backend code was modified.
