@@ -2,60 +2,46 @@ Member: C
 Role: Streamlit UI and Visualization
 
 Status: IN PROGRESS
-Current Task: C2 — Process Input UI (COMPLETE)
+Current Task: C3 — Gantt Chart + Results Dashboard (COMPLETE)
 Completed Tasks:
 - C1: Streamlit application foundation with backend integration
 - C2: Real process input UI (manual entry + CSV upload)
+- C3: Gantt chart visualization + polished results dashboard
 
-=== C1 (Frontend Foundation) ===
+=== C3 (Gantt Chart + Results Dashboard) ===
 Files:
-- app.py           [NEW] — Streamlit application entry point
-- requirements.txt [NEW] — runtime dependencies (streamlit)
+- app.py            [MODIFIED] — added Gantt chart, metrics dashboard, per-process table
+- requirements.txt  [MODIFIED] — added matplotlib dependency
 
-=== C2 (Process Input UI) ===
-Files:
-- app.py           [MODIFIED] — replaced C1 smoke test with real input UI
+New functions:
+  render_gantt_chart(result)        — matplotlib horizontal bar Gantt chart
+  display_metrics_dashboard(result) — polished metric cards with icons
+  display_process_table(result)     — clean per-process results table
+  display_results(result)           — orchestrates dashboard + Gantt + table
 
-Input methods:
-  1. Manual Entry:
-     - Form with PID, Arrival Time, Burst Time, Priority fields
-     - Add Process button (with auto-incrementing PID default)
-     - Current process table displayed above form
-     - Remove Selected process (selectbox + button)
-     - Clear All Processes button
-     - Session state preserves processes across Streamlit reruns
+Gantt chart features:
+  - Reads execution_segments directly from SimulationResult (no reconstruction)
+  - Deterministic per-PID colour palette (10 colours, cycled)
+  - IDLE segments shown in light grey (#D3D3D3), visually distinct
+  - Process labels centred inside each bar (white text on colour, dark on IDLE)
+  - Time-axis markers at every segment boundary
+  - Legend showing PID → colour mapping + IDLE
+  - Correctly handles: FCFS, SJF, Priority, Round Robin
+  - Correctly handles: initial idle time, idle gaps, multiple RR segments
+  - Correctly handles: single process, many processes, same-arrival-time
+  - Dynamic figure width scales with total simulation time
 
-  2. CSV Upload:
-     - st.file_uploader accepting .csv files
-     - Decodes UTF-8
-     - Calls B3 parse_processes_csv() — no parsing logic duplicated
-     - Displays CsvParseError.message via st.error on parse failure
-     - Calls B1 validate_processes() on successful parse
-     - Displays ValidationError.message via st.error on validation failure
-     - Shows extra-column warning (non-blocking) via st.warning
-     - Displays parsed process table on success
-     - Sample CSV download button provided
+Metrics dashboard:
+  - Avg Waiting Time, Avg Turnaround Time, Avg Response Time
+  - CPU Utilization (%), Throughput (proc/unit)
+  - All values from SimulationResult — no recalculation
 
-  Input method radio: switches between Manual Entry and CSV Upload
-  Switching modes is clean — each mode uses its own session state keys
+Per-process table:
+  - PID, Arrival, Burst, Priority, Completion, Turnaround, Waiting, Response
+  - All values from ProcessMetrics — no recalculation
 
-Session state keys:
-  manual_processes     — list[dict] of manually entered process data
-  next_pid_num         — auto-incrementing PID counter
-  csv_processes        — list[Process] from successful CSV parse
-  csv_extra_columns    — list[str] of extra column names found
-  simulation_result    — last SimulationResult (persists across reruns)
-
-Algorithm selection (from C1, unchanged):
-  Sidebar: FCFS, SJF, Priority, Round Robin
-  Time Quantum input visible only for Round Robin
-
-Simulation:
-  "Run Simulation" button (disabled when no processes present)
-  Pipeline: validate_processes → algo.schedule → compute_metrics
-  Results: aggregate metrics + per-process table + text timeline
-  Validation errors shown as st.error with user-friendly messages
-  Unexpected errors caught and shown without raw tracebacks
+Dependencies added:
+  - matplotlib (already installed as 3.10.7; added to requirements.txt)
 
 Tests:
   - All 312 existing backend tests still pass
@@ -65,11 +51,5 @@ Blockers:
   - None
 
 Next Task:
-  - C3: Gantt chart visualization + full results dashboard
-
-Notes for Team:
-  - Run with: streamlit run app.py
-  - Manual processes are auto-suggested as P1, P2, P3...
-  - CSV upload uses B3 parse_processes_csv directly
-  - All validation uses B1 validate_processes — no duplication
-  - All metrics use B2 compute_metrics — no duplication
+  - None for Member C (C1, C2, C3 complete)
+  - Project ready for documentation, demo preparation

@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import io
 
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import streamlit as st
 
 # ---------------------------------------------------------------------------
@@ -49,6 +51,33 @@ ALGORITHMS: dict[str, type] = {
     "Round Robin": RoundRobin,
 }
 
+# Deterministic, readable colour palette for process IDs.
+_PROCESS_COLORS = [
+    "#4C78A8",  # steel blue
+    "#F58518",  # orange
+    "#E45756",  # red
+    "#72B7B2",  # teal
+    "#54A24B",  # green
+    "#EECA3B",  # yellow
+    "#B279A2",  # purple
+    "#FF9DA6",  # pink
+    "#9D755D",  # brown
+    "#BAB0AC",  # grey
+]
+_IDLE_COLOR = "#D3D3D3"  # light grey for IDLE segments
+
+
+def _pid_color_map(segments) -> dict[str, str]:
+    """Build a deterministic PID → colour mapping from execution segments."""
+    seen: list[str] = []
+    for seg in segments:
+        if not seg.is_idle and seg.process_id not in seen:
+            seen.append(seg.process_id)
+    return {
+        pid: _PROCESS_COLORS[i % len(_PROCESS_COLORS)]
+        for i, pid in enumerate(seen)
+    }
+
 
 # ---------------------------------------------------------------------------
 # Session-state helpers
@@ -56,17 +85,13 @@ ALGORITHMS: dict[str, type] = {
 
 
 def _init_session_state() -> None:
-    """Ensure all required session-state keys exist with defaults.
-
-    Called once at the top of every Streamlit rerun.  Keys are initialised
-    only if absent so that existing state survives widget-driven reruns.
-    """
+    """Ensure all required session-state keys exist with defaults."""
     if "manual_processes" not in st.session_state:
-        st.session_state.manual_processes = []  # list[dict]
+        st.session_state.manual_processes = []
     if "next_pid_num" not in st.session_state:
         st.session_state.next_pid_num = 1
     if "csv_processes" not in st.session_state:
-        st.session_state.csv_processes = []  # list[Process]
+        st.session_state.csv_processes = []
     if "csv_extra_columns" not in st.session_state:
         st.session_state.csv_extra_columns = []
     if "simulation_result" not in st.session_state:
@@ -74,7 +99,7 @@ def _init_session_state() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Backend pipeline helpers (unchanged from C1)
+# Backend pipeline helpers
 # ---------------------------------------------------------------------------
 
 
@@ -98,7 +123,6 @@ def run_simulation(
     ValueError
         When validation fails (with a user-friendly message).
     """
-    # --- Validate inputs ---------------------------------------------------
     val_result = validate_processes(processes)
     if not val_result.is_valid:
         messages = "\n".join(f"• {e.message}" for e in val_result.errors)
@@ -110,35 +134,115 @@ def run_simulation(
             messages = "\n".join(f"• {e.message}" for e in q_result.errors)
             raise ValueError(f"Quantum validation failed:\n{messages}")
 
-    # --- Schedule ----------------------------------------------------------
     algo = get_algorithm(algorithm_name, quantum)
     result = algo.schedule(processes)
-
-    # --- Enrich with B2 metrics --------------------------------------------
     return compute_metrics(result, processes)
 
 
-def display_results(result: SimulationResult) -> None:
-    """Render a SimulationResult in Streamlit."""
-    st.subheader(f"📊 Results — {result.algorithm_name}")
+# ---------------------------------------------------------------------------
+# Gantt chart (C3)
+# ---------------------------------------------------------------------------
 
-    # --- Aggregate metrics -------------------------------------------------
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Avg Waiting", f"{result.average_waiting_time:.2f}")
-    col2.metric("Avg Turnaround", f"{result.average_turnaround_time:.2f}")
+
+def render_gantt_chart(result: SimulationResult) -> None:
+    """Render a horizontal Gantt chart from execution_segments using matplotlib."""
+    segments = result.execution_segments
+    if not segments:
+        st.warning("No execution segments to display.")
+        return
+
+    color_map = _pid_color_map(segments)
+    total_time = segments[-1].end_time
+
+    fig, ax = plt.subplots(figsize=(max(10, total_time * 0.6), 2.0))
+
+    # Draw each segment as a horizontal bar on a single row (y=0).
+    for seg in segments:
+        duration = seg.end_time - seg.start_time
+        if duration <= 0:
+            continue
+        color = _IDLE_COLOR if seg.is_idle else color_map[seg.process_id]
+        label = "IDLE" if seg.is_idle else seg.process_id
+
+        ax.barh(
+            y=0,
+            width=duration,
+            left=seg.start_time,
+            height=0.6,
+            color=color,
+            edgecolor="white",
+            linewidth=1.5,
+        )
+        # Label inside the bar
+        ax.text(
+            seg.start_time + duration / 2,
+            0,
+            label,
+            ha="center",
+            va="center",
+            fontsize=9,
+            fontweight="bold",
+            color="#333333" if seg.is_idle else "white",
+        )
+
+    # Time markers along the bottom
+    time_ticks = sorted({seg.start_time for seg in segments} | {segments[-1].end_time})
+    ax.set_xticks(time_ticks)
+    ax.set_xticklabels([str(t) for t in time_ticks], fontsize=8)
+    ax.set_xlabel("Time", fontsize=10)
+    ax.set_xlim(segments[0].start_time, total_time)
+    ax.set_yticks([])
+    ax.set_title(f"{result.algorithm_name} — Gantt Chart", fontsize=12, pad=10)
+
+    # Legend
+    legend_patches = []
+    for pid, color in color_map.items():
+        legend_patches.append(mpatches.Patch(color=color, label=pid))
+    legend_patches.append(mpatches.Patch(color=_IDLE_COLOR, label="IDLE"))
+    ax.legend(
+        handles=legend_patches,
+        loc="upper right",
+        fontsize=8,
+        framealpha=0.9,
+    )
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    plt.tight_layout()
+
+    st.pyplot(fig)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Results dashboard (C3)
+# ---------------------------------------------------------------------------
+
+
+def display_metrics_dashboard(result: SimulationResult) -> None:
+    """Render polished metric cards from the SimulationResult."""
+    st.subheader(f"📊 {result.algorithm_name} — Metrics Dashboard")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("⏱️ Avg Waiting Time", f"{result.average_waiting_time:.2f}")
+    col2.metric("🔄 Avg Turnaround Time", f"{result.average_turnaround_time:.2f}")
     if result.average_response_time is not None:
-        col3.metric("Avg Response", f"{result.average_response_time:.2f}")
+        col3.metric("⚡ Avg Response Time", f"{result.average_response_time:.2f}")
+
+    col4, col5 = st.columns(2)
     if result.cpu_utilization is not None:
-        col4.metric("CPU Utilization", f"{result.cpu_utilization:.1f}%")
-
+        col4.metric("💻 CPU Utilization", f"{result.cpu_utilization:.1f}%")
     if result.throughput is not None:
-        st.caption(f"Throughput: {result.throughput:.4f} processes/time unit")
+        col5.metric("📈 Throughput", f"{result.throughput:.4f} proc/unit")
 
-    # --- Per-process metrics table -----------------------------------------
-    st.markdown("**Per-Process Metrics**")
+
+def display_process_table(result: SimulationResult) -> None:
+    """Render the per-process metrics table."""
+    st.subheader("📋 Per-Process Results")
     table_data = []
     for m in result.process_metrics:
-        row = {
+        table_data.append({
             "PID": m.pid,
             "Arrival": m.arrival_time,
             "Burst": m.burst_time,
@@ -146,23 +250,30 @@ def display_results(result: SimulationResult) -> None:
             "Completion": m.completion_time,
             "Turnaround": m.turnaround_time,
             "Waiting": m.waiting_time,
-        }
-        if m.response_time is not None:
-            row["Response"] = m.response_time
-        table_data.append(row)
+            "Response": m.response_time if m.response_time is not None else "—",
+        })
     st.table(table_data)
 
-    # --- Execution timeline (text, placeholder for Gantt in C3) ------------
-    st.markdown("**Execution Timeline** *(Gantt visualization coming in C3)*")
-    timeline_parts = []
-    for seg in result.execution_segments:
-        label = seg.process_id if not seg.is_idle else "IDLE"
-        timeline_parts.append(f"{label} [{seg.start_time}→{seg.end_time}]")
-    st.code(" | ".join(timeline_parts))
+
+def display_results(result: SimulationResult) -> None:
+    """Render the full results section: dashboard + Gantt + table."""
+    # 1. Metrics dashboard
+    display_metrics_dashboard(result)
+
+    st.divider()
+
+    # 2. Gantt chart
+    st.subheader("📊 Execution Timeline — Gantt Chart")
+    render_gantt_chart(result)
+
+    st.divider()
+
+    # 3. Per-process table
+    display_process_table(result)
 
 
 # ---------------------------------------------------------------------------
-# UI sections
+# UI sections (C2 — unchanged)
 # ---------------------------------------------------------------------------
 
 
@@ -197,7 +308,6 @@ def _render_manual_input() -> None:
     """Render the manual process entry form and current process table."""
     procs = st.session_state.manual_processes
 
-    # --- Current process table ---------------------------------------------
     if procs:
         st.markdown("**Current Processes**")
         st.table([
@@ -212,7 +322,6 @@ def _render_manual_input() -> None:
     else:
         st.info("No processes added yet.  Use the form below to add processes.")
 
-    # --- Add process form --------------------------------------------------
     st.markdown("**Add a Process**")
     with st.form("add_process_form", clear_on_submit=True):
         col1, col2, col3, col4 = st.columns(4)
@@ -257,7 +366,6 @@ def _render_manual_input() -> None:
             st.session_state.next_pid_num += 1
             st.rerun()
 
-    # --- Remove / Clear controls -------------------------------------------
     if procs:
         rm_col, clear_col = st.columns(2)
         with rm_col:
@@ -273,8 +381,8 @@ def _render_manual_input() -> None:
                 ]
                 st.rerun()
         with clear_col:
-            st.markdown("")  # spacer
-            st.markdown("")  # align button vertically
+            st.markdown("")
+            st.markdown("")
             if st.button("🧹 Clear All Processes"):
                 st.session_state.manual_processes = []
                 st.session_state.next_pid_num = 1
@@ -309,7 +417,6 @@ def _render_csv_upload() -> None:
     )
 
     if uploaded is not None:
-        # Decode and parse using B3
         try:
             csv_text = uploaded.read().decode("utf-8")
         except UnicodeDecodeError:
@@ -327,13 +434,11 @@ def _render_csv_upload() -> None:
             st.session_state.csv_processes = []
             return
 
-        # Warn about extra columns (non-blocking)
         if parse_result.extra_columns:
             st.warning(
                 f"ℹ️ Extra columns ignored: {', '.join(parse_result.extra_columns)}"
             )
 
-        # Run B1 validation on parsed processes
         val_result = validate_processes(parse_result.processes)
         if not val_result.is_valid:
             st.error("❌ **Validation Errors in CSV data:**")
@@ -342,12 +447,10 @@ def _render_csv_upload() -> None:
             st.session_state.csv_processes = []
             return
 
-        # All good — store processes
         st.session_state.csv_processes = parse_result.processes
         st.session_state.csv_extra_columns = parse_result.extra_columns
         st.success(f"✅ Parsed {len(parse_result.processes)} valid process(es) from CSV.")
 
-        # Show parsed processes
         st.markdown("**Parsed Processes**")
         st.table([
             {
@@ -380,7 +483,6 @@ def _render_sample_csv() -> None:
 
 def main() -> None:
     """Streamlit application entry point."""
-    # --- Page config -------------------------------------------------------
     st.set_page_config(
         page_title="CPU Scheduling Simulator",
         page_icon="⚙️",
@@ -388,19 +490,18 @@ def main() -> None:
     )
     _init_session_state()
 
-    # --- Title & description -----------------------------------------------
     st.title("⚙️ CPU Scheduling Simulator")
     st.markdown(
         "A web-based simulator for classic CPU scheduling algorithms.  "
         "Enter processes manually or upload a CSV, choose an algorithm, "
-        "and view scheduling results including per-process metrics and "
-        "execution timelines."
+        "and view scheduling results including Gantt charts, metrics dashboards, "
+        "and per-process result tables."
     )
 
     # --- Sidebar -----------------------------------------------------------
     selected_algo, quantum = _render_sidebar()
 
-    # --- Process Input -----------------------------------------------------
+    # --- Process Input (C2) ------------------------------------------------
     st.header("📋 Process Input")
 
     input_method = st.radio(
@@ -433,7 +534,7 @@ def main() -> None:
         disabled=(len(active_processes) == 0),
     )
 
-    # --- Results -----------------------------------------------------------
+    # --- Results (C3) ------------------------------------------------------
     st.header("📈 Results")
 
     if run_clicked and active_processes:

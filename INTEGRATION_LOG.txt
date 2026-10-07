@@ -55,3 +55,12 @@ CPU Scheduling Lab — Integration Log
   Session state keys: manual_processes, next_pid_num, csv_processes, csv_extra_columns, simulation_result.
   Run Simulation button triggers: validate → schedule → compute_metrics → display results.
   All 312 prior tests continue to pass. No backend code was modified.
+- C3 Gantt chart + results dashboard implemented by Member C (app.py, requirements.txt modified).
+  Gantt chart: matplotlib horizontal bar chart reading SimulationResult.execution_segments directly.
+  Deterministic per-PID colours, IDLE in light grey, time-axis markers, legend.
+  Handles: FCFS, SJF, Priority, RR (multiple segments), initial idle, idle gaps, single/many processes.
+  Metrics dashboard: 5 metric cards (avg waiting, turnaround, response, CPU util, throughput).
+  Per-process table: PID, Arrival, Burst, Priority, Completion, Turnaround, Waiting, Response.
+  All values from SimulationResult/ProcessMetrics — no recalculation in frontend.
+  Dependency added: matplotlib (to requirements.txt).
+  All 312 prior tests continue to pass. No backend code was modified.
