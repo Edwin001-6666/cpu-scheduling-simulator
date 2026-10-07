@@ -64,3 +64,11 @@ CPU Scheduling Lab — Integration Log
   All values from SimulationResult/ProcessMetrics — no recalculation in frontend.
   Dependency added: matplotlib (to requirements.txt).
   All 312 prior tests continue to pass. No backend code was modified.
+- C4 Algorithm comparison + final UI polish implemented by Member C (app.py modified).
+  run_algorithm_comparison(processes, quantum) runs all 4 algorithms on same validated workload.
+  _find_best(results) identifies best performer per metric, handles ties gracefully.
+  render_comparison_table() shows comparison table + best-performer highlights per workload.
+  render_comparison_chart() displays grouped bar chart (avg waiting, turnaround, response).
+  Sidebar: dedicated RR quantum input for comparison (separate from single-algo quantum).
+  Validation: reuses existing validate_processes() and validate_round_robin_quantum().
+  All 312 prior tests continue to pass. No backend code was modified.

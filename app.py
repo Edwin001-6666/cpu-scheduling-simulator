@@ -21,6 +21,7 @@ import io
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import numpy as np
 import streamlit as st
 
 # ---------------------------------------------------------------------------
@@ -66,6 +67,14 @@ _PROCESS_COLORS = [
 ]
 _IDLE_COLOR = "#D3D3D3"  # light grey for IDLE segments
 
+# Colours for algorithm comparison bar chart.
+_ALGO_COLORS = {
+    "FCFS": "#4C78A8",
+    "SJF": "#F58518",
+    "Priority": "#54A24B",
+    "Round Robin": "#B279A2",
+}
+
 
 def _pid_color_map(segments) -> dict[str, str]:
     """Build a deterministic PID → colour mapping from execution segments."""
@@ -96,6 +105,8 @@ def _init_session_state() -> None:
         st.session_state.csv_extra_columns = []
     if "simulation_result" not in st.session_state:
         st.session_state.simulation_result = None
+    if "comparison_results" not in st.session_state:
+        st.session_state.comparison_results = None
 
 
 # ---------------------------------------------------------------------------
@@ -140,6 +151,170 @@ def run_simulation(
 
 
 # ---------------------------------------------------------------------------
+# Algorithm comparison (C4)
+# ---------------------------------------------------------------------------
+
+
+def run_algorithm_comparison(
+    processes: list[Process],
+    quantum: int = 2,
+) -> dict[str, SimulationResult]:
+    """Run all four algorithms on the same validated workload.
+
+    Parameters
+    ----------
+    processes:
+        Already-validated list of Process objects.
+    quantum:
+        Time quantum for Round Robin.
+
+    Returns
+    -------
+    dict mapping algorithm display name → SimulationResult (with metrics).
+    """
+    results: dict[str, SimulationResult] = {}
+    for name in ALGORITHMS:
+        algo = get_algorithm(name, quantum if name == "Round Robin" else None)
+        raw = algo.schedule(processes)
+        results[name] = compute_metrics(raw, processes)
+    return results
+
+
+def _find_best(
+    results: dict[str, SimulationResult],
+) -> dict[str, list[str]]:
+    """Identify best-performing algorithm(s) for each metric.
+
+    Returns a dict mapping metric name → list of algorithm names that
+    achieved the best value.  Lists have >1 entry on ties.
+
+    Lower is better for: waiting, turnaround, response.
+    Higher is better for: utilization, throughput.
+    """
+    metrics_lower = {
+        "Avg Waiting Time": lambda r: r.average_waiting_time,
+        "Avg Turnaround Time": lambda r: r.average_turnaround_time,
+    }
+    metrics_higher = {
+        "CPU Utilization": lambda r: r.cpu_utilization,
+        "Throughput": lambda r: r.throughput,
+    }
+    # Response time may be None — only compare when all are available.
+    all_resp = [r.average_response_time for r in results.values()]
+    if all(v is not None for v in all_resp):
+        metrics_lower["Avg Response Time"] = lambda r: r.average_response_time
+
+    best: dict[str, list[str]] = {}
+
+    for metric_name, extractor in metrics_lower.items():
+        vals = {name: extractor(r) for name, r in results.items()}
+        min_val = min(vals.values())
+        best[metric_name] = [n for n, v in vals.items() if v == min_val]
+
+    for metric_name, extractor in metrics_higher.items():
+        vals = {name: extractor(r) for name, r in results.items()
+                if extractor(r) is not None}
+        if vals:
+            max_val = max(vals.values())
+            best[metric_name] = [n for n, v in vals.items() if v == max_val]
+
+    return best
+
+
+def render_comparison_table(
+    results: dict[str, SimulationResult],
+    best: dict[str, list[str]],
+) -> None:
+    """Display the algorithm comparison table with best-performer highlights."""
+    table_data = []
+    for name, r in results.items():
+        row = {
+            "Algorithm": name,
+            "Avg Waiting": f"{r.average_waiting_time:.2f}",
+            "Avg Turnaround": f"{r.average_turnaround_time:.2f}",
+            "Avg Response": (f"{r.average_response_time:.2f}"
+                             if r.average_response_time is not None else "—"),
+            "CPU Util (%)": (f"{r.cpu_utilization:.1f}"
+                             if r.cpu_utilization is not None else "—"),
+            "Throughput": (f"{r.throughput:.4f}"
+                           if r.throughput is not None else "—"),
+        }
+        table_data.append(row)
+
+    st.table(table_data)
+
+    # Best-performer callouts
+    st.markdown("**🏆 Best for this workload:**")
+    for metric_name, winners in best.items():
+        winners_str = ", ".join(winners)
+        if len(winners) == len(results):
+            st.caption(f"• **{metric_name}**: All algorithms tied")
+        elif len(winners) > 1:
+            st.caption(f"• **{metric_name}**: {winners_str} (tied)")
+        else:
+            st.caption(f"• **{metric_name}**: {winners_str}")
+
+
+def render_comparison_chart(
+    results: dict[str, SimulationResult],
+) -> None:
+    """Render a grouped bar chart comparing time-based metrics across algorithms."""
+    algo_names = list(results.keys())
+    metrics = {
+        "Avg Waiting": [r.average_waiting_time for r in results.values()],
+        "Avg Turnaround": [r.average_turnaround_time for r in results.values()],
+    }
+
+    # Include response time only if all algorithms computed it.
+    resp_times = [r.average_response_time for r in results.values()]
+    if all(v is not None for v in resp_times):
+        metrics["Avg Response"] = resp_times
+
+    n_algos = len(algo_names)
+    n_metrics = len(metrics)
+    x = np.arange(n_algos)
+    bar_width = 0.8 / n_metrics
+
+    fig, ax = plt.subplots(figsize=(max(8, n_algos * 2.5), 4))
+
+    metric_colors = ["#4C78A8", "#F58518", "#54A24B"]
+    for i, (metric_label, values) in enumerate(metrics.items()):
+        offset = (i - n_metrics / 2 + 0.5) * bar_width
+        bars = ax.bar(
+            x + offset,
+            values,
+            bar_width,
+            label=metric_label,
+            color=metric_colors[i % len(metric_colors)],
+            edgecolor="white",
+            linewidth=0.5,
+        )
+        # Value labels on bars
+        for bar, val in zip(bars, values):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.1,
+                f"{val:.1f}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(algo_names, fontsize=10)
+    ax.set_ylabel("Time Units", fontsize=10)
+    ax.set_title("Algorithm Comparison — Time Metrics", fontsize=12, pad=10)
+    ax.legend(fontsize=9, loc="upper left")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.set_ylim(bottom=0)
+    plt.tight_layout()
+
+    st.pyplot(fig)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
 # Gantt chart (C3)
 # ---------------------------------------------------------------------------
 
@@ -156,7 +331,6 @@ def render_gantt_chart(result: SimulationResult) -> None:
 
     fig, ax = plt.subplots(figsize=(max(10, total_time * 0.6), 2.0))
 
-    # Draw each segment as a horizontal bar on a single row (y=0).
     for seg in segments:
         duration = seg.end_time - seg.start_time
         if duration <= 0:
@@ -173,7 +347,6 @@ def render_gantt_chart(result: SimulationResult) -> None:
             edgecolor="white",
             linewidth=1.5,
         )
-        # Label inside the bar
         ax.text(
             seg.start_time + duration / 2,
             0,
@@ -185,7 +358,6 @@ def render_gantt_chart(result: SimulationResult) -> None:
             color="#333333" if seg.is_idle else "white",
         )
 
-    # Time markers along the bottom
     time_ticks = sorted({seg.start_time for seg in segments} | {segments[-1].end_time})
     ax.set_xticks(time_ticks)
     ax.set_xticklabels([str(t) for t in time_ticks], fontsize=8)
@@ -194,7 +366,6 @@ def render_gantt_chart(result: SimulationResult) -> None:
     ax.set_yticks([])
     ax.set_title(f"{result.algorithm_name} — Gantt Chart", fontsize=12, pad=10)
 
-    # Legend
     legend_patches = []
     for pid, color in color_map.items():
         legend_patches.append(mpatches.Patch(color=color, label=pid))
@@ -257,23 +428,16 @@ def display_process_table(result: SimulationResult) -> None:
 
 def display_results(result: SimulationResult) -> None:
     """Render the full results section: dashboard + Gantt + table."""
-    # 1. Metrics dashboard
     display_metrics_dashboard(result)
-
     st.divider()
-
-    # 2. Gantt chart
     st.subheader("📊 Execution Timeline — Gantt Chart")
     render_gantt_chart(result)
-
     st.divider()
-
-    # 3. Per-process table
     display_process_table(result)
 
 
 # ---------------------------------------------------------------------------
-# UI sections (C2 — unchanged)
+# UI sections (C2 — preserved)
 # ---------------------------------------------------------------------------
 
 
@@ -297,6 +461,17 @@ def _render_sidebar() -> tuple[str, int | None]:
                 step=1,
                 help="Number of time units per Round Robin slice.",
             )
+
+        st.divider()
+        st.markdown("**Round Robin Quantum**")
+        rr_quantum = st.number_input(
+            "Quantum for Comparison",
+            min_value=1,
+            value=2,
+            step=1,
+            key="comparison_quantum",
+            help="Time quantum used for Round Robin in the algorithm comparison.",
+        )
 
         st.divider()
         st.caption("Algorithms provided by Laptop A's scheduling engine.")
@@ -495,7 +670,7 @@ def main() -> None:
         "A web-based simulator for classic CPU scheduling algorithms.  "
         "Enter processes manually or upload a CSV, choose an algorithm, "
         "and view scheduling results including Gantt charts, metrics dashboards, "
-        "and per-process result tables."
+        "and algorithm comparisons."
     )
 
     # --- Sidebar -----------------------------------------------------------
@@ -519,7 +694,7 @@ def main() -> None:
         _render_sample_csv()
         active_processes = list(st.session_state.csv_processes)
 
-    # --- Simulation --------------------------------------------------------
+    # --- Single-Algorithm Simulation (C3) ----------------------------------
     st.header("▶️ Simulation")
 
     info_parts = [f"Algorithm: **{selected_algo}**"]
@@ -534,7 +709,6 @@ def main() -> None:
         disabled=(len(active_processes) == 0),
     )
 
-    # --- Results (C3) ------------------------------------------------------
     st.header("📈 Results")
 
     if run_clicked and active_processes:
@@ -552,6 +726,60 @@ def main() -> None:
         display_results(st.session_state.simulation_result)
     elif not run_clicked:
         st.caption("Add processes and press **Run Simulation** to see results.")
+
+    # --- Algorithm Comparison (C4) -----------------------------------------
+    st.header("🔀 Algorithm Comparison")
+    st.markdown(
+        "Compare all four scheduling algorithms on the **same workload**.  "
+        "Results show which algorithm performs best for each metric "
+        "*on the current set of processes*."
+    )
+
+    compare_quantum = st.session_state.get("comparison_quantum", 2)
+
+    compare_clicked = st.button(
+        "📊 Compare All Algorithms",
+        disabled=(len(active_processes) == 0),
+    )
+
+    if compare_clicked and active_processes:
+        # Validate processes first
+        val_result = validate_processes(active_processes)
+        if not val_result.is_valid:
+            messages = "\n".join(f"• {e.message}" for e in val_result.errors)
+            st.error(f"Input validation failed:\n{messages}")
+            st.session_state.comparison_results = None
+        else:
+            # Validate RR quantum
+            q_result = validate_round_robin_quantum(compare_quantum)
+            if not q_result.is_valid:
+                messages = "\n".join(f"• {e.message}" for e in q_result.errors)
+                st.error(f"Round Robin quantum validation failed:\n{messages}")
+                st.session_state.comparison_results = None
+            else:
+                try:
+                    comp = run_algorithm_comparison(active_processes, compare_quantum)
+                    st.session_state.comparison_results = comp
+                except Exception as exc:
+                    st.error(f"An unexpected error occurred: {exc}")
+                    st.session_state.comparison_results = None
+
+    if st.session_state.comparison_results is not None:
+        comp = st.session_state.comparison_results
+        best = _find_best(comp)
+
+        st.subheader("📋 Comparison Table")
+        render_comparison_table(comp, best)
+
+        st.divider()
+
+        st.subheader("📊 Visual Comparison")
+        render_comparison_chart(comp)
+    elif not compare_clicked:
+        st.caption(
+            "Add processes and press **Compare All Algorithms** to see "
+            "a side-by-side comparison."
+        )
 
     # --- Footer ------------------------------------------------------------
     st.divider()

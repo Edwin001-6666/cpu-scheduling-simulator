@@ -1,37 +1,31 @@
 Project name: CPU Scheduling Lab
-Current phase: Gantt Chart + Results Dashboard — Complete
-Overall status: FEATURE COMPLETE (pending documentation/demo)
+Current phase: Algorithm Comparison — Complete
+Overall status: FEATURE COMPLETE
 
-Initial foundation complete.
-Shared data contracts established.
-Scheduling-engine interface established (algorithms/base.py).
+FCFS algorithm — IMPLEMENTED (algorithms/fcfs.py). Tests in tests/test_fcfs.py (13 tests).
+SJF algorithm — IMPLEMENTED (algorithms/sjf.py). Tests in tests/test_sjf.py (17 tests).
+Priority algorithm — IMPLEMENTED (algorithms/priority.py). Tests in tests/test_priority.py (19 tests).
+Round Robin algorithm — IMPLEMENTED (algorithms/round_robin.py). Tests in tests/test_round_robin.py (23 tests).
+Integration tests — tests/test_integration.py (26 tests).
 
-FCFS algorithm — IMPLEMENTED (algorithms/fcfs.py). Tests in tests/test_fcfs.py (13 tests, all passing).
-SJF algorithm — IMPLEMENTED (algorithms/sjf.py). Tests in tests/test_sjf.py (17 tests, all passing).
-Priority algorithm — IMPLEMENTED (algorithms/priority.py). Tests in tests/test_priority.py (19 tests, all passing).
-Round Robin algorithm — IMPLEMENTED (algorithms/round_robin.py). Tests in tests/test_round_robin.py (23 tests, all passing).
-Integration tests — tests/test_integration.py (26 tests, all passing).
+Validation layer — IMPLEMENTED (core/validation.py). Tests in tests/test_validation.py (78 tests).
+Metrics layer — IMPLEMENTED (core/metrics.py). Tests in tests/test_metrics.py (62 tests).
+CSV import layer — IMPLEMENTED (core/csv_import.py). Tests in tests/test_csv_import.py (74 tests).
+Streamlit frontend — COMPLETE (app.py). C1 + C2 + C3 + C4 all implemented.
 
-Validation layer — IMPLEMENTED (core/validation.py). Tests in tests/test_validation.py (78 tests, all passing).
-Metrics layer — IMPLEMENTED (core/metrics.py). Tests in tests/test_metrics.py (62 tests, all passing).
-CSV import layer — IMPLEMENTED (core/csv_import.py). Tests in tests/test_csv_import.py (74 tests, all passing).
-Streamlit frontend — COMPLETE (app.py). C1 foundation + C2 input UI + C3 Gantt + dashboard.
-
-All four required scheduling algorithms are implemented.
-Complete end-to-end pipeline working in Streamlit:
-  Manual entry / CSV upload → validate → schedule → compute_metrics → Gantt + dashboard
 Total: 312 tests, all passing.
-
 Dependencies: streamlit, matplotlib
 
+Complete end-to-end pipeline:
+  Manual entry / CSV upload → validate → schedule → compute_metrics → Gantt + dashboard
+  Algorithm comparison: run all 4 algorithms on same workload, grouped bar chart, best highlights
+
 Remaining tasks:
-- Algorithm comparison feature — NOT implemented (optional enhancement)
-- Documentation — NOT implemented
-- Demo/Presentation — NOT implemented
 - Deployment to Streamlit Community Cloud — NOT implemented
+- Documentation / README — NOT implemented
 
 Team ownership:
 - Member A — Scheduling Engine (COMPLETE)
-- Member B — Models, Metrics, Validation, CSV Input (B1, B2, B3 all COMPLETE)
-- Member C — Streamlit UI and Visualization (C1, C2, C3 all COMPLETE)
+- Member B — Models, Metrics, Validation, CSV Input (COMPLETE)
+- Member C — Streamlit UI and Visualization (C1-C4 all COMPLETE)
 - Member D — Testing, Documentation, Demo/Presentation
