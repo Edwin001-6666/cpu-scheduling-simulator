@@ -1,6 +1,5 @@
-"""CPU Scheduling Simulator — Streamlit Application (C1 Foundation).
+"""CPU Scheduling Simulator — Streamlit Application.
 
-This is the entry point for the web-based CPU scheduling simulator.
 Run with:  ``streamlit run app.py``
 
 Architecture
@@ -17,6 +16,8 @@ No scheduling, validation, or metric logic is duplicated here.
 """
 
 from __future__ import annotations
+
+import io
 
 import streamlit as st
 
@@ -50,25 +51,35 @@ ALGORITHMS: dict[str, type] = {
 
 
 # ---------------------------------------------------------------------------
-# Helper functions
+# Session-state helpers
+# ---------------------------------------------------------------------------
+
+
+def _init_session_state() -> None:
+    """Ensure all required session-state keys exist with defaults.
+
+    Called once at the top of every Streamlit rerun.  Keys are initialised
+    only if absent so that existing state survives widget-driven reruns.
+    """
+    if "manual_processes" not in st.session_state:
+        st.session_state.manual_processes = []  # list[dict]
+    if "next_pid_num" not in st.session_state:
+        st.session_state.next_pid_num = 1
+    if "csv_processes" not in st.session_state:
+        st.session_state.csv_processes = []  # list[Process]
+    if "csv_extra_columns" not in st.session_state:
+        st.session_state.csv_extra_columns = []
+    if "simulation_result" not in st.session_state:
+        st.session_state.simulation_result = None
+
+
+# ---------------------------------------------------------------------------
+# Backend pipeline helpers (unchanged from C1)
 # ---------------------------------------------------------------------------
 
 
 def get_algorithm(name: str, quantum: int | None = None):
-    """Instantiate a scheduling algorithm by display name.
-
-    Parameters
-    ----------
-    name:
-        One of the keys in ``ALGORITHMS``.
-    quantum:
-        Required when *name* is ``"Round Robin"``.
-
-    Returns
-    -------
-    An instance of the selected :class:`~algorithms.base.SchedulingAlgorithm`
-    subclass.
-    """
+    """Instantiate a scheduling algorithm by display name."""
     cls = ALGORITHMS[name]
     if name == "Round Robin":
         return cls(time_quantum=quantum)
@@ -81,9 +92,6 @@ def run_simulation(
     quantum: int | None = None,
 ) -> SimulationResult:
     """Execute the full pipeline: validate → schedule → compute_metrics.
-
-    Returns an enriched :class:`~core.models.SimulationResult` with all
-    optional fields populated.
 
     Raises
     ------
@@ -144,8 +152,8 @@ def display_results(result: SimulationResult) -> None:
         table_data.append(row)
     st.table(table_data)
 
-    # --- Execution timeline (text, placeholder for Gantt) ------------------
-    st.markdown("**Execution Timeline** *(Gantt visualization coming in C2/C3)*")
+    # --- Execution timeline (text, placeholder for Gantt in C3) ------------
+    st.markdown("**Execution Timeline** *(Gantt visualization coming in C3)*")
     timeline_parts = []
     for seg in result.execution_segments:
         label = seg.process_id if not seg.is_idle else "IDLE"
@@ -154,61 +162,14 @@ def display_results(result: SimulationResult) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Smoke test — proves the backend integration works
+# UI sections
 # ---------------------------------------------------------------------------
 
 
-def run_smoke_test() -> None:
-    """Run a small sample through the full pipeline and display results.
-
-    This is embedded in C1 to catch import/API issues early.  It will be
-    replaced by live user input in C2.
-    """
-    st.info("🔬 **Backend Integration Smoke Test** — "
-            "running a sample workload through the full pipeline.")
-
-    sample_processes = [
-        Process(pid="P1", arrival_time=0, burst_time=5, priority=2),
-        Process(pid="P2", arrival_time=1, burst_time=3, priority=1),
-        Process(pid="P3", arrival_time=2, burst_time=4, priority=3),
-    ]
-
-    st.caption("Sample input: P1(at=0, bt=5, prio=2), "
-               "P2(at=1, bt=3, prio=1), P3(at=2, bt=4, prio=3)")
-
-    try:
-        result = run_simulation(sample_processes, "FCFS")
-        display_results(result)
-        st.success("✅ Backend integration verified — all APIs working correctly.")
-    except Exception as exc:
-        st.error(f"❌ Smoke test failed: {exc}")
-
-
-# ---------------------------------------------------------------------------
-# Page layout
-# ---------------------------------------------------------------------------
-
-
-def main() -> None:
-    """Streamlit application entry point."""
-    # --- Page config -------------------------------------------------------
-    st.set_page_config(
-        page_title="CPU Scheduling Simulator",
-        page_icon="⚙️",
-        layout="wide",
-    )
-
-    # --- Title & description -----------------------------------------------
-    st.title("⚙️ CPU Scheduling Simulator")
-    st.markdown(
-        "A web-based simulator for classic CPU scheduling algorithms. "
-        "Enter processes, choose an algorithm, and view scheduling results "
-        "including per-process metrics and execution timelines."
-    )
-
-    # --- Sidebar: Algorithm selection --------------------------------------
+def _render_sidebar() -> tuple[str, int | None]:
+    """Render the sidebar and return (algorithm_name, quantum_or_None)."""
     with st.sidebar:
-        st.header("Algorithm")
+        st.header("⚙️ Algorithm")
         selected_algo = st.selectbox(
             "Scheduling Algorithm",
             options=list(ALGORITHMS.keys()),
@@ -229,45 +190,267 @@ def main() -> None:
         st.divider()
         st.caption("Algorithms provided by Laptop A's scheduling engine.")
 
-    # --- Main area ---------------------------------------------------------
+    return selected_algo, quantum
 
-    # Section 1: Process Input (placeholder for C2)
-    st.header("📋 Process Input")
+
+def _render_manual_input() -> None:
+    """Render the manual process entry form and current process table."""
+    procs = st.session_state.manual_processes
+
+    # --- Current process table ---------------------------------------------
+    if procs:
+        st.markdown("**Current Processes**")
+        st.table([
+            {
+                "PID": p["pid"],
+                "Arrival Time": p["arrival_time"],
+                "Burst Time": p["burst_time"],
+                "Priority": p["priority"],
+            }
+            for p in procs
+        ])
+    else:
+        st.info("No processes added yet.  Use the form below to add processes.")
+
+    # --- Add process form --------------------------------------------------
+    st.markdown("**Add a Process**")
+    with st.form("add_process_form", clear_on_submit=True):
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            pid = st.text_input(
+                "PID",
+                value=f"P{st.session_state.next_pid_num}",
+                help="Unique process identifier.",
+            )
+        with col2:
+            arrival = st.number_input(
+                "Arrival Time",
+                min_value=0,
+                value=0,
+                step=1,
+                help="Time unit when the process becomes ready (≥ 0).",
+            )
+        with col3:
+            burst = st.number_input(
+                "Burst Time",
+                min_value=1,
+                value=1,
+                step=1,
+                help="CPU time required (> 0).",
+            )
+        with col4:
+            priority = st.number_input(
+                "Priority",
+                value=1,
+                step=1,
+                help="Lower number = higher priority.",
+            )
+
+        submitted = st.form_submit_button("➕ Add Process", type="primary")
+        if submitted:
+            st.session_state.manual_processes.append({
+                "pid": pid.strip(),
+                "arrival_time": int(arrival),
+                "burst_time": int(burst),
+                "priority": int(priority),
+            })
+            st.session_state.next_pid_num += 1
+            st.rerun()
+
+    # --- Remove / Clear controls -------------------------------------------
+    if procs:
+        rm_col, clear_col = st.columns(2)
+        with rm_col:
+            pid_options = [p["pid"] for p in procs]
+            remove_pid = st.selectbox(
+                "Remove process",
+                options=pid_options,
+                key="remove_pid_select",
+            )
+            if st.button("🗑️ Remove Selected"):
+                st.session_state.manual_processes = [
+                    p for p in procs if p["pid"] != remove_pid
+                ]
+                st.rerun()
+        with clear_col:
+            st.markdown("")  # spacer
+            st.markdown("")  # align button vertically
+            if st.button("🧹 Clear All Processes"):
+                st.session_state.manual_processes = []
+                st.session_state.next_pid_num = 1
+                st.rerun()
+
+
+def _get_manual_processes() -> list[Process]:
+    """Convert the session-state manual process dicts to Process objects."""
+    return [
+        Process(
+            pid=p["pid"],
+            arrival_time=p["arrival_time"],
+            burst_time=p["burst_time"],
+            priority=p["priority"],
+        )
+        for p in st.session_state.manual_processes
+    ]
+
+
+def _render_csv_upload() -> None:
+    """Render the CSV upload widget and parse the uploaded file."""
     st.markdown(
-        "*Full CSV upload and manual entry will be available in C2.  "
-        "The smoke test below uses a hardcoded sample dataset.*"
+        "Upload a CSV file with columns: **PID, Arrival Time, Burst Time, Priority**"
+    )
+    st.caption("Column order does not matter.  Extra columns are silently ignored.")
+
+    uploaded = st.file_uploader(
+        "Choose a CSV file",
+        type=["csv"],
+        key="csv_uploader",
+        help="CSV with columns: PID, Arrival Time, Burst Time, Priority",
     )
 
-    # Section 2: Simulation controls
-    st.header("▶️ Simulation")
-    run_col, info_col = st.columns([1, 3])
-    with run_col:
-        run_clicked = st.button("Run Smoke Test", type="primary")
-    with info_col:
-        st.caption(
-            f"Algorithm: **{selected_algo}**"
-            + (f" (quantum={quantum})" if selected_algo == "Round Robin" else "")
-        )
-
-    # Section 3: Results
-    st.header("📈 Results")
-    if run_clicked:
+    if uploaded is not None:
+        # Decode and parse using B3
         try:
-            # Use the selected algorithm for the smoke test
-            sample_processes = [
-                Process(pid="P1", arrival_time=0, burst_time=5, priority=2),
-                Process(pid="P2", arrival_time=1, burst_time=3, priority=1),
-                Process(pid="P3", arrival_time=2, burst_time=4, priority=3),
-            ]
-            result = run_simulation(sample_processes, selected_algo, quantum)
-            display_results(result)
-            st.success("✅ Backend integration verified.")
+            csv_text = uploaded.read().decode("utf-8")
+        except UnicodeDecodeError:
+            st.error("❌ Could not decode the file as UTF-8.  "
+                     "Please upload a UTF-8 encoded CSV file.")
+            st.session_state.csv_processes = []
+            return
+
+        parse_result = parse_processes_csv(csv_text)
+
+        if not parse_result.is_valid:
+            st.error("❌ **CSV Parsing Errors:**")
+            for err in parse_result.errors:
+                st.error(f"• {err.message}")
+            st.session_state.csv_processes = []
+            return
+
+        # Warn about extra columns (non-blocking)
+        if parse_result.extra_columns:
+            st.warning(
+                f"ℹ️ Extra columns ignored: {', '.join(parse_result.extra_columns)}"
+            )
+
+        # Run B1 validation on parsed processes
+        val_result = validate_processes(parse_result.processes)
+        if not val_result.is_valid:
+            st.error("❌ **Validation Errors in CSV data:**")
+            for err in val_result.errors:
+                st.error(f"• {err.message}")
+            st.session_state.csv_processes = []
+            return
+
+        # All good — store processes
+        st.session_state.csv_processes = parse_result.processes
+        st.session_state.csv_extra_columns = parse_result.extra_columns
+        st.success(f"✅ Parsed {len(parse_result.processes)} valid process(es) from CSV.")
+
+        # Show parsed processes
+        st.markdown("**Parsed Processes**")
+        st.table([
+            {
+                "PID": p.pid,
+                "Arrival Time": p.arrival_time,
+                "Burst Time": p.burst_time,
+                "Priority": p.priority,
+            }
+            for p in parse_result.processes
+        ])
+    else:
+        st.session_state.csv_processes = []
+
+
+def _render_sample_csv() -> None:
+    """Show a downloadable sample CSV for user convenience."""
+    sample = "PID,Arrival Time,Burst Time,Priority\nP1,0,5,2\nP2,1,3,1\nP3,2,4,3\n"
+    st.download_button(
+        label="📄 Download Sample CSV",
+        data=sample,
+        file_name="sample_processes.csv",
+        mime="text/csv",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+
+def main() -> None:
+    """Streamlit application entry point."""
+    # --- Page config -------------------------------------------------------
+    st.set_page_config(
+        page_title="CPU Scheduling Simulator",
+        page_icon="⚙️",
+        layout="wide",
+    )
+    _init_session_state()
+
+    # --- Title & description -----------------------------------------------
+    st.title("⚙️ CPU Scheduling Simulator")
+    st.markdown(
+        "A web-based simulator for classic CPU scheduling algorithms.  "
+        "Enter processes manually or upload a CSV, choose an algorithm, "
+        "and view scheduling results including per-process metrics and "
+        "execution timelines."
+    )
+
+    # --- Sidebar -----------------------------------------------------------
+    selected_algo, quantum = _render_sidebar()
+
+    # --- Process Input -----------------------------------------------------
+    st.header("📋 Process Input")
+
+    input_method = st.radio(
+        "Input Method",
+        options=["Manual Entry", "CSV Upload"],
+        horizontal=True,
+        help="Choose how to provide process data.",
+    )
+
+    if input_method == "Manual Entry":
+        _render_manual_input()
+        active_processes = _get_manual_processes()
+    else:
+        _render_csv_upload()
+        _render_sample_csv()
+        active_processes = list(st.session_state.csv_processes)
+
+    # --- Simulation --------------------------------------------------------
+    st.header("▶️ Simulation")
+
+    info_parts = [f"Algorithm: **{selected_algo}**"]
+    if selected_algo == "Round Robin":
+        info_parts.append(f"Quantum: **{quantum}**")
+    info_parts.append(f"Processes: **{len(active_processes)}**")
+    st.caption(" · ".join(info_parts))
+
+    run_clicked = st.button(
+        "🚀 Run Simulation",
+        type="primary",
+        disabled=(len(active_processes) == 0),
+    )
+
+    # --- Results -----------------------------------------------------------
+    st.header("📈 Results")
+
+    if run_clicked and active_processes:
+        try:
+            result = run_simulation(active_processes, selected_algo, quantum)
+            st.session_state.simulation_result = result
         except ValueError as ve:
             st.error(str(ve))
+            st.session_state.simulation_result = None
         except Exception as exc:
             st.error(f"An unexpected error occurred: {exc}")
-    else:
-        st.caption("Press **Run Smoke Test** to execute the simulation.")
+            st.session_state.simulation_result = None
+
+    if st.session_state.simulation_result is not None:
+        display_results(st.session_state.simulation_result)
+    elif not run_clicked:
+        st.caption("Add processes and press **Run Simulation** to see results.")
 
     # --- Footer ------------------------------------------------------------
     st.divider()

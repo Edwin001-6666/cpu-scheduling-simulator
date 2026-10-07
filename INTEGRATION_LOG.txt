@@ -46,3 +46,12 @@ CPU Scheduling Lab — Integration Log
   UI layout: sidebar (algorithm + quantum), main (process input placeholder, simulation controls, results).
   Error handling: ValidationError messages displayed as st.error; no raw tracebacks exposed.
   All 312 prior tests continue to pass. No backend code was modified.
+- C2 Process Input UI implemented by Member C (app.py modified).
+  Replaced C1 smoke-test placeholder with two real input methods:
+    1. Manual Entry: form (PID, Arrival, Burst, Priority), add/remove/clear, session state persistence.
+    2. CSV Upload: st.file_uploader → UTF-8 decode → parse_processes_csv (B3) → validate_processes (B1).
+  Parse errors (CsvParseError.message) and validation errors (ValidationError.message) displayed via st.error.
+  Extra CSV columns surfaced as st.warning. Sample CSV download button provided.
+  Session state keys: manual_processes, next_pid_num, csv_processes, csv_extra_columns, simulation_result.
+  Run Simulation button triggers: validate → schedule → compute_metrics → display results.
+  All 312 prior tests continue to pass. No backend code was modified.

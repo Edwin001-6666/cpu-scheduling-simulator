@@ -2,61 +2,60 @@ Member: C
 Role: Streamlit UI and Visualization
 
 Status: IN PROGRESS
-Current Task: C1 — Streamlit Frontend Foundation (COMPLETE)
+Current Task: C2 — Process Input UI (COMPLETE)
 Completed Tasks:
-- C1: Created Streamlit application entry point with backend integration
+- C1: Streamlit application foundation with backend integration
+- C2: Real process input UI (manual entry + CSV upload)
 
 === C1 (Frontend Foundation) ===
 Files:
 - app.py           [NEW] — Streamlit application entry point
 - requirements.txt [NEW] — runtime dependencies (streamlit)
 
-Entry point:
-  streamlit run app.py
+=== C2 (Process Input UI) ===
+Files:
+- app.py           [MODIFIED] — replaced C1 smoke test with real input UI
 
-Application structure:
-  main()              — page config, layout, section routing
-  get_algorithm()     — algorithm instantiation by name
-  run_simulation()    — full pipeline: validate → schedule → compute_metrics
-  display_results()   — render SimulationResult in Streamlit
-  run_smoke_test()    — backend integration verification
+Input methods:
+  1. Manual Entry:
+     - Form with PID, Arrival Time, Burst Time, Priority fields
+     - Add Process button (with auto-incrementing PID default)
+     - Current process table displayed above form
+     - Remove Selected process (selectbox + button)
+     - Clear All Processes button
+     - Session state preserves processes across Streamlit reruns
 
-Backend integration (verified):
-  from core import (
-      Process, SimulationResult,
-      parse_processes_csv,        # B3
-      validate_processes,          # B1
-      validate_round_robin_quantum,# B1
-      compute_metrics,             # B2
-  )
-  from algorithms.fcfs import FCFS
-  from algorithms.sjf import SJF
-  from algorithms.priority import PriorityScheduler
-  from algorithms.round_robin import RoundRobin
+  2. CSV Upload:
+     - st.file_uploader accepting .csv files
+     - Decodes UTF-8
+     - Calls B3 parse_processes_csv() — no parsing logic duplicated
+     - Displays CsvParseError.message via st.error on parse failure
+     - Calls B1 validate_processes() on successful parse
+     - Displays ValidationError.message via st.error on validation failure
+     - Shows extra-column warning (non-blocking) via st.warning
+     - Displays parsed process table on success
+     - Sample CSV download button provided
 
-UI layout:
-  Sidebar:
-    - Algorithm selection (FCFS, SJF, Priority, Round Robin)
-    - Time Quantum input (visible only for Round Robin)
-  Main:
-    - Title and description
-    - Process Input section (placeholder for C2)
-    - Simulation controls with Run button
-    - Results section:
-      - Aggregate metrics (avg waiting, turnaround, response, CPU util)
-      - Throughput
-      - Per-process metrics table
-      - Execution timeline (text, placeholder for Gantt in C2/C3)
+  Input method radio: switches between Manual Entry and CSV Upload
+  Switching modes is clean — each mode uses its own session state keys
 
-Smoke test:
-  - Sample: P1(at=0,bt=5,prio=2), P2(at=1,bt=3,prio=1), P3(at=2,bt=4,prio=3)
-  - Pipeline: validate_processes → algo.schedule → compute_metrics
-  - All four algorithms connectable via sidebar selection
+Session state keys:
+  manual_processes     — list[dict] of manually entered process data
+  next_pid_num         — auto-incrementing PID counter
+  csv_processes        — list[Process] from successful CSV parse
+  csv_extra_columns    — list[str] of extra column names found
+  simulation_result    — last SimulationResult (persists across reruns)
 
-Error handling:
-  - ValidationError messages displayed via st.error (user-friendly)
-  - Unexpected exceptions caught and shown without raw tracebacks
-  - Never silently swallows errors
+Algorithm selection (from C1, unchanged):
+  Sidebar: FCFS, SJF, Priority, Round Robin
+  Time Quantum input visible only for Round Robin
+
+Simulation:
+  "Run Simulation" button (disabled when no processes present)
+  Pipeline: validate_processes → algo.schedule → compute_metrics
+  Results: aggregate metrics + per-process table + text timeline
+  Validation errors shown as st.error with user-friendly messages
+  Unexpected errors caught and shown without raw tracebacks
 
 Tests:
   - All 312 existing backend tests still pass
@@ -66,11 +65,11 @@ Blockers:
   - None
 
 Next Task:
-  - C2: Full Process Input UI (CSV upload, manual entry)
+  - C3: Gantt chart visualization + full results dashboard
 
 Notes for Team:
   - Run with: streamlit run app.py
-  - app.py calls the same backend APIs the test suite exercises
-  - No scheduling, validation, metrics, or CSV logic was duplicated
-  - No algorithm code was modified
-  - Ready for C2 to add proper input handling
+  - Manual processes are auto-suggested as P1, P2, P3...
+  - CSV upload uses B3 parse_processes_csv directly
+  - All validation uses B1 validate_processes — no duplication
+  - All metrics use B2 compute_metrics — no duplication
