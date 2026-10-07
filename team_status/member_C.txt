@@ -8,6 +8,7 @@ Completed Tasks:
 - C2: Real process input UI (manual entry + CSV upload)
 - C3: Gantt chart visualization + polished results dashboard
 - C4: Algorithm comparison + final UI polish
+- C5: Deployment readiness audit + Streamlit Community Cloud verification
 
 === C4 (Algorithm Comparison) ===
 Files:
@@ -46,14 +47,24 @@ User flow:
      - Runs all 4 algorithms
      - Shows comparison table + best highlights + grouped bar chart
 
+=== C5 (Deployment Readiness) ===
+Audit & Verification:
+- Entry point: app.py
+- Dependencies: streamlit, matplotlib (declared in requirements.txt)
+- Zero hardcoded filesystem paths / Windows dependencies
+- Zero secrets, tokens, or external DB requirements
+- In-memory CSV parsing and process management
+- Linux/Streamlit Community Cloud compatibility verified
+- Local headless smoke test passed (HTTP 200 on / and /_stcore/health)
+
 Tests:
   - All 312 existing backend tests pass
   - No backend code was modified
 
 Blockers:
-  - None
+  - Streamlit Community Cloud public deployment requires browser-based GitHub OAuth authorization by repo owner.
 
 Notes for Team:
-  - All Member C tasks (C1-C4) are complete
-  - Run with: streamlit run app.py
-  - Project is FEATURE COMPLETE for core functionality
+  - All Member C tasks (C1-C5) are complete
+  - Application is 100% deployment-ready for Streamlit Community Cloud
+  - Run locally with: streamlit run app.py

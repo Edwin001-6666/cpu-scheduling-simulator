@@ -1,6 +1,6 @@
 Project name: CPU Scheduling Lab
-Current phase: Algorithm Comparison — Complete
-Overall status: FEATURE COMPLETE
+Current phase: Deployment Readiness & Verification (C5) — Complete
+Overall status: DEPLOYMENT READY
 
 FCFS algorithm — IMPLEMENTED (algorithms/fcfs.py). Tests in tests/test_fcfs.py (13 tests).
 SJF algorithm — IMPLEMENTED (algorithms/sjf.py). Tests in tests/test_sjf.py (17 tests).
@@ -11,7 +11,7 @@ Integration tests — tests/test_integration.py (26 tests).
 Validation layer — IMPLEMENTED (core/validation.py). Tests in tests/test_validation.py (78 tests).
 Metrics layer — IMPLEMENTED (core/metrics.py). Tests in tests/test_metrics.py (62 tests).
 CSV import layer — IMPLEMENTED (core/csv_import.py). Tests in tests/test_csv_import.py (74 tests).
-Streamlit frontend — COMPLETE (app.py). C1 + C2 + C3 + C4 all implemented.
+Streamlit frontend — COMPLETE (app.py). C1-C4 implemented. C5 deployment audit verified.
 
 Total: 312 tests, all passing.
 Dependencies: streamlit, matplotlib
@@ -19,10 +19,11 @@ Dependencies: streamlit, matplotlib
 Complete end-to-end pipeline:
   Manual entry / CSV upload → validate → schedule → compute_metrics → Gantt + dashboard
   Algorithm comparison: run all 4 algorithms on same workload, grouped bar chart, best highlights
+  Deployment readiness: verified locally (headless HTTP 200, clean in-memory operation, OS-agnostic)
 
 Remaining tasks:
-- Deployment to Streamlit Community Cloud — NOT implemented
-- Documentation / README — NOT implemented
+- Streamlit Community Cloud public deployment (manual step via share.streamlit.io)
+- Documentation / README
 
 Team ownership:
 - Member A — Scheduling Engine (COMPLETE)

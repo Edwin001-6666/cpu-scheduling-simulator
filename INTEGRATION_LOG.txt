@@ -72,3 +72,8 @@ CPU Scheduling Lab — Integration Log
   Sidebar: dedicated RR quantum input for comparison (separate from single-algo quantum).
   Validation: reuses existing validate_processes() and validate_round_robin_quantum().
   All 312 prior tests continue to pass. No backend code was modified.
+- C5 Deployment Readiness + Streamlit Community Cloud verification (app.py, requirements.txt audited).
+  Audited entry point (app.py), dependencies (streamlit, matplotlib), zero hardcoded paths,
+  zero secrets, in-memory CSV handling, pure Python/Linux compatibility, 312 tests passing.
+  Local headless smoke-test verified: HTTP 200 on / and /_stcore/health.
+  Streamlit Community Cloud ready (requires user OAuth/repo selection at share.streamlit.io).
