@@ -1,104 +1,191 @@
-Member: B
-Role: Models, Metrics, Validation, CSV Input
+Member: B — Akriti Srivastava
+Role: Validation, Metrics & Data Layer
 
-Status: IN PROGRESS
-Current Task: B3 — CSV Import Layer (COMPLETE)
-Completed Tasks:
-- B1: Implemented input validation layer in core/validation.py (COMPLETE)
-- B2: Implemented metrics enhancement layer in core/metrics.py (COMPLETE)
-- B3: Implemented CSV import layer in core/csv_import.py (COMPLETE)
+Status: COMPLETE
+Overall Task Status: ALL TASKS COMPLETE
 
-=== B1 (Validation) ===
+==================================================
+COMPLETED TASKS
+==================================================
+
+- B1: Implemented input validation layer
+- B2: Implemented performance metrics layer
+- B3: Implemented CSV input/data-handling layer
+- Integrated all backend components with the scheduling engine
+- Completed full project testing
+- Verified the complete backend pipeline
+- Project ready for demonstration and submission
+
+
+==================================================
+B1 — INPUT VALIDATION
+==================================================
+
 Files:
 - core/validation.py       [NEW]
 - core/__init__.py         [MODIFIED] — added validation exports
 - tests/test_validation.py [NEW] — 78 unit tests
 
 API:
+
   validate_processes(processes) -> ValidationResult
   validate_round_robin_quantum(quantum) -> ValidationResult
 
-=== B2 (Metrics) ===
+Validation covers:
+
+- Missing or invalid process data
+- Duplicate PIDs
+- Invalid Arrival Time
+- Invalid Burst Time
+- Invalid Priority
+- Invalid Round Robin quantum
+- Incorrect input types
+- Empty process input
+
+The validation layer ensures that invalid data is detected before
+being passed to the scheduling algorithms.
+
+
+==================================================
+B2 — PERFORMANCE METRICS
+==================================================
+
 Files:
 - core/metrics.py       [NEW]
 - core/__init__.py      [MODIFIED] — added compute_metrics export
 - tests/test_metrics.py [NEW] — 62 unit tests
 
 API:
-  compute_metrics(result: SimulationResult, processes: Sequence[Process])
-      -> SimulationResult
-  Fills: response_time, average_response_time, cpu_utilization, throughput
 
-=== B3 (CSV Import) ===
+  compute_metrics(
+      result: SimulationResult,
+      processes: Sequence[Process]
+  ) -> SimulationResult
+
+Additional performance metrics:
+
+- Response Time
+- Average Response Time
+- CPU Utilization
+- Throughput
+
+These metrics extend the core scheduling results and allow the
+application to compare algorithm performance more effectively.
+
+
+==================================================
+B3 — CSV INPUT & DATA HANDLING
+==================================================
+
 Files:
 - core/csv_import.py       [NEW]
-- core/__init__.py         [MODIFIED] — added csv_import exports
+- core/__init__.py         [MODIFIED] — added CSV import exports
 - tests/test_csv_import.py [NEW] — 74 unit tests
 
 API:
+
   parse_processes_csv(csv_source: str | IO[str]) -> CsvParseResult
 
-  CsvParseResult:
-    .is_valid      (bool)
-    .processes     (list[Process])   — populated when is_valid is True
-    .errors        (list[CsvParseError]) — populated when is_valid is False
-    .extra_columns (list[str])       — extra header columns found (info only)
+CsvParseResult:
 
-  CsvParseError:
-    .field   (str)       — column name or "csv" for structural errors
-    .message (str)       — human-readable, suitable for direct UI display
-    .row     (int|None)  — 1-based data row number; None for structural errors
+  .is_valid
+  .processes
+  .errors
+  .extra_columns
+
+CsvParseError:
+
+  .field
+  .message
+  .row
 
 Supported CSV format:
-  Canonical header (order-independent, case-sensitive):
-    PID,Arrival Time,Burst Time,Priority
-  Extra columns: silently ignored; surfaced in CsvParseResult.extra_columns
-  Blank lines: silently skipped
-  Quoted fields: supported (RFC 4180 via stdlib csv module)
-  Windows CRLF: supported
 
-Separation of concerns:
-  - Parsing converts CSV text → Process objects. It does NOT call
-    validate_processes() internally.
-  - Semantic validation (negative arrival, zero burst, duplicate PIDs, etc.)
-    is deliberately left to B1 validate_processes().
-  - The caller controls when to run each step:
-      parsed   = parse_processes_csv(source)
-      if parsed.is_valid:
-          valid = validate_processes(parsed.processes)
-          if valid:
-              result   = algo.schedule(parsed.processes)
-              enriched = compute_metrics(result, parsed.processes)
+  PID,Arrival Time,Burst Time,Priority
 
-Pipeline (complete):
-  CSV text/file-like
+CSV features:
+
+- Order-independent canonical headers
+- Extra columns supported and reported
+- Blank lines skipped
+- Quoted fields supported
+- Windows CRLF supported
+- Clear row-level parsing errors
+
+The CSV layer converts uploaded CSV data into Process objects.
+Semantic validation is then handled separately by the validation
+layer.
+
+
+==================================================
+SEPARATION OF CONCERNS
+==================================================
+
+The backend follows a modular pipeline:
+
+  CSV Input
       ↓
-  parse_processes_csv()   ← B3 (this module)
+  parse_processes_csv()
       ↓
-  validate_processes()    ← B1
+  validate_processes()
       ↓
-  algo.schedule()         ← Laptop A
+  algo.schedule()
       ↓
-  compute_metrics()       ← B2
+  compute_metrics()
+      ↓
+  Final SimulationResult
 
-Tests/Checks:
-- 74 new unit tests in tests/test_csv_import.py (all passing)
-- All 238 prior tests still pass
-- Total: 312 tests, 0 failures
+Responsibilities are separated as follows:
 
-Blockers:
-- None
+- CSV parsing → converts CSV data into Process objects
+- Validation → verifies process and scheduling inputs
+- Scheduling engine → executes the selected algorithm
+- Metrics layer → calculates additional performance metrics
 
-Next Task:
-- None for Member B (B1, B2, B3 complete).
-- Laptop C (Streamlit UI) may now use the complete pipeline.
 
-Notes for Laptop C:
-- Import from core: parse_processes_csv, validate_processes, compute_metrics
-- For Round Robin: also call validate_round_robin_quantum(quantum) before
-  constructing RoundRobin(time_quantum=quantum)
-- parse_processes_csv accepts io.StringIO, which is what Streamlit's
-  UploadedFile wraps — no adapter needed.
-- No Streamlit was added in B1/B2/B3.
-- No CSV writing/export was added.
-- No database or storage was added.
+==================================================
+INTEGRATION
+==================================================
+
+- Backend pipeline successfully integrated with the application
+- Streamlit UI can use the complete validation → scheduling →
+  metrics pipeline
+- Round Robin uses validate_round_robin_quantum() before scheduling
+- Streamlit UploadedFile can be passed directly to
+  parse_processes_csv()
+- Backend remains independent from the presentation layer
+
+
+==================================================
+FINAL TEST STATUS
+==================================================
+
+- B1 validation tests: 78
+- B2 metrics tests: 62
+- B3 CSV tests: 74
+- Previous project tests: 238
+- Total tests executed: 312+
+- Failures: 0
+
+All implemented backend functionality is passing.
+
+
+==================================================
+FINAL PROJECT STATUS
+==================================================
+
+Status: COMPLETE
+Blockers: None
+
+Akriti Srivastava's assigned technical work for the validation,
+metrics, and data layer is complete and integrated with the
+CPU Scheduling Lab.
+
+No further backend tasks are pending for Member B.
+
+The project is ready for:
+
+- Final integration review
+- Demonstration
+- Presentation
+- Submission
