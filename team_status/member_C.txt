@@ -1,8 +1,9 @@
-Member: C
-Role: Streamlit UI and Visualization
+Member: C — Anish
+Role: Frontend & Visualization
 
 Status: COMPLETE
 Current Task: None — all C tasks finished
+
 Completed Tasks:
 - C1: Streamlit application foundation with backend integration
 - C2: Real process input UI (manual entry + CSV upload)
@@ -10,61 +11,237 @@ Completed Tasks:
 - C4: Algorithm comparison + final UI polish
 - C5: Deployment readiness audit + Streamlit Community Cloud verification
 
-=== C4 (Algorithm Comparison) ===
+
+==================================================
+C1 — STREAMLIT APPLICATION FOUNDATION
+==================================================
+
+- Created the Streamlit application foundation
+- Integrated the existing backend scheduling engine
+- Connected the UI with:
+  - Process models
+  - Validation layer
+  - Scheduling algorithms
+  - Metrics layer
+- Maintained separation between frontend and backend logic
+
+
+==================================================
+C2 — PROCESS INPUT UI
+==================================================
+
+Implemented process input through:
+
+- Manual process entry
+- CSV upload
+
+Users can provide:
+
+- Process ID
+- Arrival Time
+- Burst Time
+- Priority
+
+CSV uploads are processed in memory and passed through the
+existing validation and scheduling pipeline.
+
+No permanent user-file storage is required.
+
+
+==================================================
+C3 — GANTT CHART & RESULTS DASHBOARD
+==================================================
+
+Implemented:
+
+- Gantt chart visualization
+- Process scheduling results
+- Completion Time
+- Turnaround Time
+- Waiting Time
+- Response Time
+- Average metrics
+- CPU Utilization
+- Throughput
+
+Created a polished results dashboard to make scheduling
+behavior easier to understand visually.
+
+
+==================================================
+C4 — ALGORITHM COMPARISON
+==================================================
+
 Files:
 - app.py [MODIFIED] — added algorithm comparison section
 
-New functions:
+Functions:
+
   run_algorithm_comparison(processes, quantum)
-    - Runs all 4 algorithms (FCFS, SJF, Priority, RR) on same validated workload
-    - Returns dict[str, SimulationResult]
-    - Uses existing algorithm classes and compute_metrics — no duplication
+
+  - Runs all 4 algorithms:
+    FCFS
+    SJF
+    Priority
+    Round Robin
+
+  - Uses the same validated workload for every algorithm
+  - Returns:
+      dict[str, SimulationResult]
+  - Uses the existing scheduling algorithms and metrics layer
+  - Does not duplicate scheduling logic
 
   _find_best(results)
-    - Identifies best algorithm per metric, handles ties
-    - Lower-is-better: waiting, turnaround, response
-    - Higher-is-better: utilization, throughput
+
+  - Identifies the best algorithm for each metric
+  - Handles ties explicitly
+  - Lower-is-better:
+      Waiting Time
+      Turnaround Time
+      Response Time
+
+  - Higher-is-better:
+      CPU Utilization
+      Throughput
 
   render_comparison_table(results, best)
-    - Comparison table: Algorithm, Avg Waiting, Avg Turnaround, Avg Response, CPU Util, Throughput
-    - Best-performer highlights with "Best for this workload" wording (not universal claims)
-    - Ties shown explicitly
+
+  - Displays:
+      Algorithm
+      Average Waiting Time
+      Average Turnaround Time
+      Average Response Time
+      CPU Utilization
+      Throughput
+
+  - Highlights the best performer for the current workload
+  - Uses "Best for this workload" wording rather than making
+    universal claims
+  - Displays ties explicitly
 
   render_comparison_chart(results)
-    - Grouped bar chart: avg waiting, turnaround, response across all 4 algorithms
-    - matplotlib, value labels on bars
 
-Sidebar additions:
-  - Dedicated "Quantum for Comparison" input (separate from single-algo RR quantum)
-  - Validates using existing validate_round_robin_quantum()
+  - Creates a grouped comparison chart
+  - Compares:
+      Average Waiting Time
+      Average Turnaround Time
+      Average Response Time
+  - Uses matplotlib
+  - Includes value labels
 
-User flow:
-  1. Enter processes (manual or CSV) — unchanged from C2
-  2. Run single-algorithm simulation — unchanged from C3
-  3. Compare All Algorithms — new C4 section
-     - Validates input using existing B1 validation
-     - Validates RR quantum
-     - Runs all 4 algorithms
-     - Shows comparison table + best highlights + grouped bar chart
 
-=== C5 (Deployment Readiness) ===
-Audit & Verification:
+==================================================
+ALGORITHM COMPARISON USER FLOW
+==================================================
+
+1. Enter processes
+   - Manual input or CSV upload
+
+2. Validate input
+   - Uses the existing validation layer
+
+3. Run individual simulation
+   - User selects an algorithm
+   - Existing single-algorithm workflow remains available
+
+4. Compare All Algorithms
+   - Validates the workload
+   - Validates Round Robin quantum
+   - Runs all four algorithms
+   - Calculates metrics
+   - Displays comparison table
+   - Displays best-performer highlights
+   - Displays comparison chart
+
+
+==================================================
+C5 — DEPLOYMENT READINESS
+==================================================
+
+Deployment audit completed for Streamlit Community Cloud.
+
+Verified:
+
 - Entry point: app.py
-- Dependencies: streamlit, matplotlib (declared in requirements.txt)
-- Zero hardcoded filesystem paths / Windows dependencies
-- Zero secrets, tokens, or external DB requirements
-- In-memory CSV parsing and process management
-- Linux/Streamlit Community Cloud compatibility verified
-- Local headless smoke test passed (HTTP 200 on / and /_stcore/health)
+- Dependencies declared in requirements.txt
+- Streamlit dependency included
+- Matplotlib dependency included
+- No hardcoded filesystem paths
+- No Windows-specific application dependencies
+- No secrets or tokens
+- No external database requirements
+- CSV processing is performed in memory
+- Process management is performed in memory
+- Linux/Streamlit Community Cloud compatibility reviewed
 
-Tests:
-  - All 312 existing backend tests pass
-  - No backend code was modified
+Local headless smoke test:
 
-Blockers:
-  - Streamlit Community Cloud public deployment requires browser-based GitHub OAuth authorization by repo owner.
+- HTTP 200 on /
+- HTTP 200 on /_stcore/health
 
-Notes for Team:
-  - All Member C tasks (C1-C5) are complete
-  - Application is 100% deployment-ready for Streamlit Community Cloud
-  - Run locally with: streamlit run app.py
+
+==================================================
+TEST STATUS
+==================================================
+
+All 312 existing backend tests pass.
+
+- Backend tests: 312
+- Failures: 0
+- Backend source code modified by C: No
+
+The Streamlit layer was integrated without modifying the
+existing backend scheduling functionality.
+
+
+==================================================
+CURRENT DEPLOYMENT STATUS
+==================================================
+
+Application:
+
+READY FOR STREAMLIT COMMUNITY CLOUD DEPLOYMENT
+
+The only remaining deployment step is:
+
+- Browser-based GitHub OAuth authorization by the repository
+  owner during Streamlit Community Cloud setup.
+
+
+==================================================
+LOCAL RUN
+==================================================
+
+Run the application locally using:
+
+  streamlit run app.py
+
+
+==================================================
+FINAL STATUS
+==================================================
+
+Status: COMPLETE
+Blockers: None for development
+
+All Member C tasks are complete.
+
+Anish's technical responsibility for the Frontend &
+Visualization layer is complete, including:
+
+- Streamlit UI
+- Process input
+- CSV upload interface
+- Backend integration
+- Gantt chart visualization
+- Results dashboard
+- Algorithm comparison
+- Deployment readiness verification
+
+The application is ready for:
+
+- Final integration review
+- Streamlit Community Cloud deployment
+- Demonstration
+- Presentation
+- Submission
