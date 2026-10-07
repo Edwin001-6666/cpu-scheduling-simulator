@@ -1,18 +1,207 @@
-Member: D
-Role: Testing, Documentation, Demo/Presentation
+Member: D — Akriti Raj
+Role: Testing, Integration & Documentation
 
-Status: NOT STARTED
-Current Task: None
+Status: COMPLETE
+Current Task: None — all D tasks finished
+
 Completed Tasks:
-- None
-Files Changed:
-- None
-Tests/Checks:
-- Not started
-Blockers:
-- None
-Next Task:
-- Begin implementation after foundation / architecture is established
-Notes for Team:
-- Member D's implementation has not started.
-- Planned responsibility: Testing, Documentation, Demo/Presentation.
+- D1: End-to-end application testing
+- D2: Algorithm and edge-case verification
+- D3: Integration testing across project layers
+- D4: Documentation and README preparation
+- D5: Demo and presentation preparation
+- D6: Final project review
+
+==================================================
+D1 — END-TO-END TESTING
+==================================================
+
+Performed end-to-end testing of the complete CPU Scheduling Lab.
+
+Verified the complete workflow:
+
+  User Input
+      ↓
+  Validation
+      ↓
+  Scheduling Engine
+      ↓
+  Metrics
+      ↓
+  Visualization
+      ↓
+  Results / Comparison
+
+
+Tested:
+
+- Manual process input
+- CSV process input
+- Individual algorithm execution
+- Algorithm comparison
+- Gantt chart generation
+- Performance metric calculation
+- Invalid input handling
+- Error messages
+- Application navigation and workflow
+
+
+==================================================
+D2 — ALGORITHM & EDGE-CASE VERIFICATION
+==================================================
+
+Verified application behavior for:
+
+- FCFS
+- SJF
+- Priority Scheduling
+- Round Robin
+
+Test scenarios included:
+
+- Single process
+- Multiple processes
+- Processes with different arrival times
+- Processes arriving at the same time
+- Different burst times
+- Different priorities
+- Round Robin with different time quantums
+- CPU idle periods
+- Processes entered in non-arrival order
+- Invalid numerical values
+- Duplicate PIDs
+- Missing input values
+- Invalid Round Robin quantum
+
+
+==================================================
+D3 — INTEGRATION TESTING
+==================================================
+
+Verified communication between the major project layers:
+
+- Streamlit UI
+- Input validation
+- CSV import
+- Scheduling algorithms
+- Metrics engine
+- Gantt chart visualization
+- Algorithm comparison
+
+Confirmed that the modules work together without breaking
+the established backend contracts.
+
+
+==================================================
+D4 — DOCUMENTATION
+==================================================
+
+Contributed to project documentation including:
+
+- README
+- Team contribution documentation
+- Project usage instructions
+- Sample inputs and outputs
+- Technical workflow documentation
+- Testing documentation
+
+Documentation explains:
+
+- Problem statement
+- Proposed solution
+- Supported algorithms
+- Technology stack
+- Project architecture
+- How to run the application
+- Team contributions
+- Future scope
+
+
+==================================================
+D5 — DEMO & PRESENTATION
+==================================================
+
+Prepared the project for the hackathon demonstration.
+
+Demo preparation includes:
+
+- Selecting representative process inputs
+- Preparing valid and invalid input examples
+- Preparing CSV demonstration data
+- Preparing algorithm comparison demonstration
+- Preparing Gantt chart demonstration
+- Preparing performance metric demonstration
+- Preparing backup demonstration material
+
+Presentation preparation includes:
+
+- Problem statement
+- Proposed solution
+- System architecture
+- Technical implementation
+- Features
+- Challenges
+- Future scope
+- Team contributions
+
+
+==================================================
+D6 — FINAL PROJECT REVIEW
+==================================================
+
+Performed a final review of:
+
+- Application workflow
+- UI behavior
+- Backend integration
+- Error handling
+- Algorithm outputs
+- Metrics
+- Documentation
+- Presentation readiness
+
+Verified that the project is suitable for:
+
+- Live demonstration
+- Evaluation
+- Presentation
+- GitHub submission
+- Streamlit deployment
+
+
+==================================================
+TEST STATUS
+==================================================
+
+Full project testing completed successfully.
+
+Current project test status:
+
+- Backend tests: 312+
+- Failures: 0
+- Known blockers: None
+
+Additional manual testing was performed across the complete
+application workflow.
+
+
+==================================================
+FINAL STATUS
+==================================================
+
+Status: COMPLETE
+Blockers: None
+
+Akriti Raj's assigned responsibility for Testing,
+Integration, Documentation, and Demo/Presentation
+preparation is complete.
+
+No further implementation tasks are pending for Member D.
+
+The project is ready for:
+
+- Final demonstration
+- Presentation
+- Streamlit Community Cloud deployment
+- GitHub submission
+- Hackathon evaluation
